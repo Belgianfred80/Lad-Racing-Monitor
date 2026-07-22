@@ -2,7 +2,7 @@ name: Monitoring Ladbrokes
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # toutes les 15 minutes (heure UTC, tolérance de quelques minutes)
+    - cron: "*/31 * * * *"   # toutes les 31 minutes (heure UTC, tolérance de quelques minutes)
   workflow_dispatch: {}       # permet aussi de lancer le check à la main depuis l'onglet Actions
 
 jobs:
