@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   check:
@@ -27,24 +28,35 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: Lancer les vérifications
+        id: verif
+        continue-on-error: true
         run: node monitor/check.js
 
-      - name: Générer la page de statut
+      - name: Générer le rapport
         if: always()
         run: |
           node -e '
           const fs = require("fs");
           let d; try { d = JSON.parse(fs.readFileSync("artifacts/summary.json")); } catch(e) { process.exit(0); }
           const date = new Date(d.date).toLocaleString("fr-BE", { timeZone: "Europe/Brussels" });
+          const detail = (r) => r.details[r.details.length-1].split("|").join("-");
           let md = "# État du monitoring Ladbrokes\n\n";
           md += "Dernière vérification : **" + date + "** (heure belge)\n\n";
           md += "| Page | État | Détail |\n|---|---|---|\n";
           for (const r of d.results) {
-            md += "| [" + r.name + "](" + r.url + ") | " + (r.ok ? "✅ OK" : "❌ ÉCHEC") + " | " + r.details[r.details.length-1].replace(/\\|/g, "-") + " |\n";
+            md += "| [" + r.name + "](" + r.url + ") | " + (r.ok ? "✅ OK" : "❌ ÉCHEC") + " | " + detail(r) + " |\n";
           }
-          md += "\nURL vérifiées :\n";
-          for (const r of d.results) { md += "- " + (r.ok ? "✅" : "❌") + " `" + r.url + "`\n"; }
           fs.writeFileSync("STATUS.md", md);
+          let issue = "Vérification du " + date + " (heure belge)\n\n";
+          for (const r of d.results) {
+            issue += (r.ok ? "✅ " : "❌ ") + "**" + r.name + "**\n";
+            issue += "URL : " + r.url + "\n";
+            issue += "Détail : " + detail(r) + "\n\n";
+          }
+          issue += "_Captures d'écran : section Artifacts du run._";
+          fs.writeFileSync("issue.md", issue);
+          const fails = d.results.filter(r => !r.ok).length;
+          fs.writeFileSync("nb_echecs.txt", String(fails));
           '
 
       - name: Publier la page de statut
@@ -55,12 +67,36 @@ jobs:
           git pull --rebase || true
           git add STATUS.md
           git diff --cached --quiet || git commit -m "Mise à jour du statut"
-          git push
+          git push || true
+
+      - name: Alerter ou clore l'alerte (e-mail via Issue)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NB=$(cat nb_echecs.txt 2>/dev/null || echo "1")
+          gh label create monitoring --color D93F0B --description "Alerte du monitoring" 2>/dev/null || true
+          OUVERTE=$(gh issue list --label monitoring --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ "$NB" != "0" ]; then
+            if [ -z "$OUVERTE" ]; then
+              gh issue create --title "❌ Monitoring Ladbrokes : $NB page(s) en échec" --body-file issue.md --label monitoring
+            else
+              echo "Alerte déjà ouverte (#$OUVERTE), pas de nouvel e-mail."
+            fi
+          else
+            if [ -n "$OUVERTE" ]; then
+              gh issue close "$OUVERTE" --comment "✅ Retour à la normale — toutes les pages sont saines."
+            fi
+          fi
 
       - name: Sauvegarder les preuves (captures d'écran, DOM)
-        if: failure()
+        if: steps.verif.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: diagnostic-${{ github.run_id }}
           path: artifacts/
           retention-days: 14
+
+      - name: Statut final du run
+        if: steps.verif.outcome == 'failure'
+        run: exit 1
