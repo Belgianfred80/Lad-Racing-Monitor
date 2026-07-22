@@ -13,7 +13,7 @@ module.exports = {
   pages: [
     {
       name: "Courses hippiques (PMU)",
-      url: "https://www.ladbrokes.be/fr/horseracAs/#!/1_pmu-french-horse-racing",
+      url: "https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing",
       // La page est "saine" si assez de preuves de contenu sont trouvées.
       // Ce sont des motifs de TEXTE visibles, indépendants du style du site.
       contentSignals: [
