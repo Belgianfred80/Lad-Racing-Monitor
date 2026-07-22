@@ -1,0 +1,36 @@
+name: Monitoring Ladbrokes
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # toutes les 15 minutes (heure UTC, tolérance de quelques minutes)
+  workflow_dispatch: {}       # permet aussi de lancer le check à la main depuis l'onglet Actions
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installer Playwright (avec cache)
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Lancer les vérifications
+        run: node monitor/check.js
+
+      # En cas d'échec : on conserve captures d'écran + DOM pour diagnostic
+      - name: Sauvegarder les preuves (captures d'écran, DOM)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 14
