@@ -14,9 +14,8 @@ module.exports = {
     {
       name: "Courses hippiques (PMU)",
       url: "https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing",
-      // La page est "saine" si AU MOINS UNE de ces preuves de contenu est trouvée.
-      // Ce sont des motifs de TEXTE visibles, indépendants des noms de classes CSS,
-      // donc robustes même si Ladbrokes retouche son style.
+      // La page est "saine" si assez de preuves de contenu sont trouvées.
+      // Ce sont des motifs de TEXTE visibles, indépendants du style du site.
       contentSignals: [
         { type: "regex", value: "\\bR\\d{1,2}\\b", description: "Badge de réunion (R1, R2...)" },
         { type: "regex", value: "\\bC\\d{1,2}\\b", description: "Case de course (C1, C2...)" },
@@ -28,12 +27,12 @@ module.exports = {
     {
       name: "Courses de lévriers",
       url: "https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing",
+      // Cette page n'affiche ni cases C1/C2 ni cotes : on vérifie
+      // qu'au moins 4 horaires de courses sont affichés.
       contentSignals: [
-        { type: "regex", value: "\\bC\\d{1,2}\\b", description: "Case de course (C1, C2...)" },
-        { type: "regex", value: "\\b\\d{1,3}[.,]\\d{2}\\b", description: "Une cote (ex: 3.60)" },
-        { type: "regex", value: "\\b\\d{1,2}:\\d{2}\\b", description: "Un horaire de course (ex: 13:50)" },
+        { type: "regex", value: "(\\d{1,2}:\\d{2}[\\s\\S]*?){4}", description: "Au moins 4 horaires de courses affichés" },
       ],
-      minSignals: 2,
+      minSignals: 1,
     },
   ],
 };
