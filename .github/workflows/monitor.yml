@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Récupérer le code
+      - name: Recuperer le code
         uses: actions/checkout@v4
 
       - name: Installer Node.js
@@ -27,36 +27,69 @@ jobs:
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
 
-      - name: Lancer les vérifications
+      - name: Lancer les verifications
         id: verif
         continue-on-error: true
         run: node monitor/check.js
 
-      - name: Générer le rapport
+      - name: Generer le rapport et la page de statut
         if: always()
         run: |
           node -e '
           const fs = require("fs");
-          let d; try { d = JSON.parse(fs.readFileSync("artifacts/summary.json")); } catch(e) { process.exit(0); }
+          let d = null;
+          try { d = JSON.parse(fs.readFileSync("artifacts/summary.json")); } catch(e) {}
+          if (!d) {
+            fs.writeFileSync("issue.md", "Le monitoring lui-meme a rencontre une erreur technique (aucun resultat produit). Voir les logs du run.");
+            fs.writeFileSync("nb_echecs.txt", "1");
+            process.exit(0);
+          }
           const date = new Date(d.date).toLocaleString("fr-BE", { timeZone: "Europe/Brussels" });
           const detail = (r) => r.details[r.details.length-1].split("|").join("-");
-          let md = "# Etat du monitoring Ladbrokes\n\n";
-          md += "Derniere verification : **" + date + "** (heure belge)\n\n";
-          md += "| Page | Etat | Detail |\n|---|---|---|\n";
+          let md = "# Etat du monitoring Ladbrokes\n\nDerniere verification : **" + date + "** (heure belge)\n\n| Page | Etat | Detail |\n|---|---|---|\n";
           for (const r of d.results) {
             md += "| [" + r.name + "](" + r.url + ") | " + (r.ok ? "OK" : "ECHEC") + " | " + detail(r) + " |\n";
           }
           fs.writeFileSync("STATUS.md", md);
           let issue = "Verification du " + date + " (heure belge)\n\n";
           for (const r of d.results) {
-            issue += (r.ok ? "OK — " : "ECHEC — ") + "**" + r.name + "**\n";
-            issue += "URL : " + r.url + "\n";
-            issue += "Detail : " + detail(r) + "\n\n";
+            issue += (r.ok ? "OK — " : "ECHEC — ") + "**" + r.name + "**\nURL : " + r.url + "\nDetail : " + detail(r) + "\n\n";
           }
           issue += "_Les captures sont dans la section Artifacts du run._";
           fs.writeFileSync("issue.md", issue);
           const fails = d.results.filter(r => !r.ok).length;
           fs.writeFileSync("nb_echecs.txt", String(fails));
+          const carte = (r) => {
+            const vitesse = r.loadTimeMs ? (r.loadTimeMs/1000).toFixed(1) + " s" : "-";
+            const enLigne = r.ok || !detail(r).includes("HTTP") ? true : false;
+            const ligneOnline = r.ok ? "&#9989; En ligne" : "&#128308; PROBLEME";
+            const ligneVitesse = r.ok ? "&#9989; Vitesse : " + vitesse : "&#128308; " + detail(r);
+            return `<div class="carte ${r.ok ? "ok" : "ko"}">
+              <h2>${r.name}</h2>
+              <p class="url"><a href="${r.url}">${r.url}</a></p>
+              <p class="etat">${ligneOnline}</p>
+              <p class="etat">${ligneVitesse}</p>
+            </div>`;
+          };
+          const html = `<!DOCTYPE html>
+          <html lang="fr"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta http-equiv="refresh" content="300">
+          <title>Statut monitoring Ladbrokes</title>
+          <style>
+            body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background:#f5f6f8; margin:0; padding:24px; color:#1a1a2e; }
+            h1 { font-size:1.3rem; } .maj { color:#666; margin-bottom:20px; }
+            .carte { background:#fff; border-radius:12px; padding:18px 22px; margin-bottom:16px; max-width:720px; box-shadow:0 1px 4px rgba(0,0,0,.08); border-left:6px solid #22a06b; }
+            .carte.ko { border-left-color:#d93025; }
+            .carte h2 { margin:0 0 6px; font-size:1.05rem; }
+            .url { margin:0 0 10px; font-size:.85rem; word-break:break-all; } .url a { color:#3556c4; }
+            .etat { margin:4px 0; font-size:1rem; }
+          </style></head><body>
+          <h1>Statut du monitoring Ladbrokes</h1>
+          <p class="maj">Derniere verification : <strong>${date}</strong> (heure belge) — page rafraichie automatiquement</p>
+          ${d.results.map(carte).join("")}
+          </body></html>`;
+          fs.writeFileSync("index.html", html);
           '
 
       - name: Publier la page de statut
@@ -65,7 +98,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase || true
-          git add STATUS.md
+          git add STATUS.md index.html 2>/dev/null || git add STATUS.md
           git diff --cached --quiet || git commit -m "Mise a jour du statut"
           git push || true
 
