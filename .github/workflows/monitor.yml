@@ -37,8 +37,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue list --label monitoring --state all --limit 1 --json title,url,state,createdAt,closedAt > dernier_incident.json || echo "[]" > dernier_incident.json
-          cat dernier_incident.json
+          gh issue list --label monitoring --state all --limit 1 --json title,body,url,state,createdAt,closedAt > dernier_incident.json || echo "[]" > dernier_incident.json
 
       - name: Generer le rapport et la page de statut
         if: always()
@@ -67,6 +66,7 @@ jobs:
           issue += "_Les captures sont dans la section Artifacts du run._";
           fs.writeFileSync("issue.md", issue);
           fs.writeFileSync("nb_echecs.txt", String(d.results.filter(r => !r.ok).length));
+          const echapper = (t) => t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
           let incidentHtml = "";
           try {
             const inc = JSON.parse(fs.readFileSync("dernier_incident.json"))[0];
@@ -75,9 +75,14 @@ jobs:
               const badge = resolu
                 ? `<span class="badge ok-badge">Resolu le ${fdate(inc.closedAt)}</span>`
                 : `<span class="badge ko-badge">EN COURS</span>`;
+              let corps = echapper(inc.body || "")
+                .split("\n").filter(l => !l.startsWith("_")).join("\n")
+                .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                .replace(/\n/g, "<br>");
               incidentHtml = `<div class="incident">
                 <h3>Dernier incident</h3>
-                <p>${fdate(inc.createdAt)} — <a href="${inc.url}">${inc.title}</a> ${badge}</p>
+                <p>${fdate(inc.createdAt)} — <a href="${inc.url}">${echapper(inc.title)}</a> ${badge}</p>
+                <div class="corps">${corps}</div>
               </div>`;
             } else {
               incidentHtml = `<div class="incident"><h3>Dernier incident</h3><p>Aucun incident enregistre.</p></div>`;
@@ -109,7 +114,8 @@ jobs:
             .etat { margin:4px 0; font-size:1rem; }
             .incident { max-width:720px; margin-top:24px; padding:14px 22px; background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
             .incident h3 { margin:0 0 8px; font-size:.95rem; color:#555; }
-            .incident p { margin:0; font-size:.95rem; } .incident a { color:#3556c4; }
+            .incident p { margin:0 0 10px; font-size:.95rem; } .incident a { color:#3556c4; }
+            .corps { font-size:.85rem; color:#444; background:#fafbfc; border:1px solid #eceef1; border-radius:8px; padding:10px 14px; word-break:break-all; }
             .badge { padding:2px 10px; border-radius:20px; font-size:.8rem; font-weight:600; margin-left:6px; }
             .ok-badge { background:#e3f5ec; color:#1b7a4e; }
             .ko-badge { background:#fde8e6; color:#c5221f; }
