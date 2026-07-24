@@ -32,6 +32,14 @@ jobs:
         continue-on-error: true
         run: node monitor/check.js
 
+      - name: Recuperer le dernier incident
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue list --label monitoring --state all --limit 1 --json title,url,state,createdAt,closedAt > dernier_incident.json || echo "[]" > dernier_incident.json
+          cat dernier_incident.json
+
       - name: Generer le rapport et la page de statut
         if: always()
         run: |
@@ -44,7 +52,8 @@ jobs:
             fs.writeFileSync("nb_echecs.txt", "1");
             process.exit(0);
           }
-          const date = new Date(d.date).toLocaleString("fr-BE", { timeZone: "Europe/Brussels" });
+          const fdate = (iso) => new Date(iso).toLocaleString("fr-BE", { timeZone: "Europe/Brussels" });
+          const date = fdate(d.date);
           const detail = (r) => r.details[r.details.length-1].split("|").join("-");
           let md = "# Etat du monitoring Ladbrokes\n\nDerniere verification : **" + date + "** (heure belge)\n\n| Page | Etat | Detail |\n|---|---|---|\n";
           for (const r of d.results) {
@@ -57,11 +66,25 @@ jobs:
           }
           issue += "_Les captures sont dans la section Artifacts du run._";
           fs.writeFileSync("issue.md", issue);
-          const fails = d.results.filter(r => !r.ok).length;
-          fs.writeFileSync("nb_echecs.txt", String(fails));
+          fs.writeFileSync("nb_echecs.txt", String(d.results.filter(r => !r.ok).length));
+          let incidentHtml = "";
+          try {
+            const inc = JSON.parse(fs.readFileSync("dernier_incident.json"))[0];
+            if (inc) {
+              const resolu = inc.state === "CLOSED";
+              const badge = resolu
+                ? `<span class="badge ok-badge">Resolu le ${fdate(inc.closedAt)}</span>`
+                : `<span class="badge ko-badge">EN COURS</span>`;
+              incidentHtml = `<div class="incident">
+                <h3>Dernier incident</h3>
+                <p>${fdate(inc.createdAt)} — <a href="${inc.url}">${inc.title}</a> ${badge}</p>
+              </div>`;
+            } else {
+              incidentHtml = `<div class="incident"><h3>Dernier incident</h3><p>Aucun incident enregistre.</p></div>`;
+            }
+          } catch(e) {}
           const carte = (r) => {
             const vitesse = r.loadTimeMs ? (r.loadTimeMs/1000).toFixed(1) + " s" : "-";
-            const enLigne = r.ok || !detail(r).includes("HTTP") ? true : false;
             const ligneOnline = r.ok ? "&#9989; En ligne" : "&#128308; PROBLEME";
             const ligneVitesse = r.ok ? "&#9989; Vitesse : " + vitesse : "&#128308; " + detail(r);
             return `<div class="carte ${r.ok ? "ok" : "ko"}">
@@ -84,10 +107,17 @@ jobs:
             .carte h2 { margin:0 0 6px; font-size:1.05rem; }
             .url { margin:0 0 10px; font-size:.85rem; word-break:break-all; } .url a { color:#3556c4; }
             .etat { margin:4px 0; font-size:1rem; }
+            .incident { max-width:720px; margin-top:24px; padding:14px 22px; background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+            .incident h3 { margin:0 0 8px; font-size:.95rem; color:#555; }
+            .incident p { margin:0; font-size:.95rem; } .incident a { color:#3556c4; }
+            .badge { padding:2px 10px; border-radius:20px; font-size:.8rem; font-weight:600; margin-left:6px; }
+            .ok-badge { background:#e3f5ec; color:#1b7a4e; }
+            .ko-badge { background:#fde8e6; color:#c5221f; }
           </style></head><body>
           <h1>Statut du monitoring Ladbrokes</h1>
           <p class="maj">Derniere verification : <strong>${date}</strong> (heure belge) — page rafraichie automatiquement</p>
           ${d.results.map(carte).join("")}
+          ${incidentHtml}
           </body></html>`;
           fs.writeFileSync("index.html", html);
           '
