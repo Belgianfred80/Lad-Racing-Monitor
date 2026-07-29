@@ -69,7 +69,7 @@ jobs:
           issue += "_Les captures sont dans la section Artifacts du run._";
           fs.writeFileSync("issue.md", issue);
           fs.writeFileSync("nb_echecs.txt", String(d.results.filter(r => !r.ok).length));
-          let incidentHtml = "<p class=\"vide\">Aucun incident enregistre.</p>";
+          let incidentHtml = "<p class=\"vide\">Aucun incident enregistre depuis la mise en service.</p>";
           try {
             const incs = JSON.parse(fs.readFileSync("dernier_incident.json")).slice(0, 2);
             if (incs.length) {
@@ -86,7 +86,7 @@ jobs:
                   <div class="incident-tete">
                     <span class="rang">${i === 0 ? "Le plus recent" : "Precedent"}</span>${badge}
                   </div>
-                  <h3><a href="${inc.url}">${echapper(inc.title)}</a></h3>
+                  <h4><a href="${inc.url}">${echapper(inc.title)}</a></h4>
                   <p class="quand">Ouvert le ${fdate(inc.createdAt)}</p>
                   <div class="corps">${corps}</div>
                 </article>`;
@@ -100,7 +100,7 @@ jobs:
             return `<article class="carte ${r.ok ? "ok" : "ko"}">
               <div class="carte-tete">
                 <span class="marque">${r.ok ? "&#10003;" : "&#10005;"}</span>
-                <h2>${r.name}</h2>
+                <h3>${r.name}</h3>
                 <span class="pill ${r.ok ? "pill-ok" : "pill-ko"}">${r.ok ? "En ligne" : "Probleme"}</span>
               </div>
               <a class="url" href="${r.url}">${r.url}</a>
@@ -125,6 +125,20 @@ jobs:
             "  if (!iso) return null;",
             "  return new Date(iso).toLocaleString(\"fr-BE\", { timeZone: \"Europe/Brussels\", day: \"2-digit\", month: \"2-digit\", year: \"numeric\", hour: \"2-digit\", minute: \"2-digit\" });",
             "}",
+            "var resume = { Actions: null, Pages: null };",
+            "function majResume() {",
+            "  var el = document.getElementById(\"infra-resume\");",
+            "  if (!el) return;",
+            "  var txt = [];",
+            "  Object.keys(resume).forEach(function(k){",
+            "    if (resume[k] === null) return;",
+            "    txt.push(k + \" \" + (resume[k] ? \"&#10003;\" : \"&#10005;\"));",
+            "  });",
+            "  if (!txt.length) return;",
+            "  var tout = Object.keys(resume).every(function(k){ return resume[k] !== false; });",
+            "  el.className = \"infra-resume \" + (tout ? \"ok\" : \"ko\");",
+            "  el.innerHTML = txt.join(\" &middot; \");",
+            "}",
             "fetch(\"https://www.githubstatus.com/api/v2/components.json\")",
             "  .then(function(r){ return r.json(); })",
             "  .then(function(data){",
@@ -132,14 +146,15 @@ jobs:
             "    data.components.forEach(function(c){",
             "      var id = noms[c.name];",
             "      if (!id) return;",
+            "      var ok = c.status === \"operational\";",
+            "      resume[c.name] = ok;",
             "      var el = document.getElementById(id);",
-            "      if (!el) return;",
-            "      if (c.status === \"operational\") {",
-            "        el.className = \"etat-svc ok\"; el.innerHTML = \"&#10003; Operationnel\";",
-            "      } else {",
-            "        el.className = \"etat-svc ko\"; el.innerHTML = \"&#10005; \" + c.status.split(\"_\").join(\" \");",
+            "      if (el) {",
+            "        el.className = \"etat-svc \" + (ok ? \"ok\" : \"ko\");",
+            "        el.innerHTML = ok ? \"&#10003; Operationnel\" : \"&#10005; \" + c.status.split(\"_\").join(\" \");",
             "      }",
             "    });",
+            "    majResume();",
             "  })",
             "  .catch(function(){});",
             "fetch(\"https://www.githubstatus.com/api/v2/incidents.json\")",
@@ -152,7 +167,7 @@ jobs:
             "      var touches = (inc.components || []).map(function(c){ return c.name; }).filter(function(n){ return vise.indexOf(n) >= 0; });",
             "      if (touches.length === 0) return;",
             "      var fin = inc.resolved_at ? (\"<span class=ok>fini \" + fh(inc.resolved_at) + \"</span>\") : \"<span class=ko>en cours</span>\";",
-            "      lignes.push(\"<li><p class=quand>\" + fh(inc.created_at) + \" &rarr; \" + fin + \"</p><p class=quoi>\" + inc.name + \" — \" + touches.join(\", \") + \" · <a href=\" + inc.shortlink + \">details</a></p></li>\");",
+            "      lignes.push(\"<li><p class=quand>\" + fh(inc.created_at) + \" &rarr; \" + fin + \"</p><p class=quoi>\" + inc.name + \" — \" + touches.join(\", \") + \" &middot; <a href=\" + inc.shortlink + \">details</a></p></li>\");",
             "    });",
             "    document.getElementById(\"gh-incidents\").innerHTML = lignes.length ? \"<ul>\" + lignes.join(\"\") + \"</ul>\" : \"<p class=vide>Aucun incident recent sur ces services.</p>\";",
             "  })",
@@ -165,19 +180,19 @@ jobs:
           <meta http-equiv="refresh" content="300">
           <title>Statut monitoring Ladbrokes</title>
           <link rel="preconnect" href="https://fonts.googleapis.com">
-          <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
           <style>
             :root {
-              --fond:#0e1319; --panneau:#161d26; --bord:#232d39;
-              --texte:#e8edf3; --doux:#8b98a8;
+              --fond:#0e1319; --panneau:#161d26; --panneau2:#121821; --bord:#232d39;
+              --texte:#e8edf3; --doux:#8b98a8; --tres-doux:#5d6b7c;
               --vert:#37d99a; --rouge:#ff6259; --ambre:#f2b544;
             }
             * { box-sizing:border-box; }
             body { margin:0; background:var(--fond); color:var(--texte);
               font-family:"Inter Tight", system-ui, -apple-system, Segoe UI, sans-serif;
               -webkit-font-smoothing:antialiased; }
-            .wrap { max-width:760px; margin:0 auto; padding:40px 20px 64px; }
-            .tete { border-bottom:1px solid var(--bord); padding-bottom:22px; margin-bottom:28px; }
+            .wrap { max-width:760px; margin:0 auto; padding:40px 20px 56px; }
+            .tete { border-bottom:1px solid var(--bord); padding-bottom:22px; margin-bottom:26px; }
             .eyebrow { margin:0 0 6px; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--doux); }
             h1 { margin:0; font-size:2.1rem; font-weight:700; letter-spacing:-.02em; }
             .horodatage { margin:10px 0 0; font-size:.85rem; color:var(--doux);
@@ -186,17 +201,23 @@ jobs:
               margin-right:8px; box-shadow:0 0 0 4px rgba(55,217,154,.15); }
             .banniere { display:none; margin-bottom:24px; padding:14px 18px; border-radius:12px;
               background:rgba(242,181,68,.1); border:1px solid rgba(242,181,68,.35); color:#f6d79a; font-size:.9rem; }
-            h2.section { font-size:.78rem; letter-spacing:.16em; text-transform:uppercase; color:var(--doux);
-              margin:38px 0 14px; font-weight:600; }
-            .carte { background:var(--panneau); border:1px solid var(--bord); border-radius:16px;
-              padding:20px 22px; margin-bottom:14px; position:relative; overflow:hidden; }
+            .bloc-surveille { background:var(--panneau2); border:1px solid var(--bord);
+              border-radius:20px; padding:22px; }
+            .bloc-tete { display:flex; align-items:baseline; gap:10px; margin:0 2px 16px; }
+            .bloc-tete h2 { margin:0; font-size:1rem; font-weight:600; letter-spacing:-.01em; }
+            .bloc-tete span { font-size:.74rem; color:var(--doux); }
+            .sous-titre { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
+              color:var(--doux); margin:26px 2px 12px; font-weight:600; }
+            .carte { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
+              padding:20px 22px; margin-bottom:12px; position:relative; overflow:hidden; }
+            .carte:last-of-type { margin-bottom:0; }
             .carte::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--vert); }
             .carte.ko::before { background:var(--rouge); }
             .carte-tete { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
             .marque { width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
               font-size:.72rem; font-weight:700; background:rgba(55,217,154,.16); color:var(--vert); }
             .carte.ko .marque { background:rgba(255,98,89,.16); color:var(--rouge); }
-            .carte h2 { margin:0; font-size:1.05rem; font-weight:600; flex:1; }
+            .carte h3 { margin:0; font-size:1.05rem; font-weight:600; flex:1; }
             .pill { font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; font-weight:700;
               padding:4px 10px; border-radius:99px; white-space:nowrap; }
             .pill-ok { background:rgba(55,217,154,.14); color:var(--vert); }
@@ -213,41 +234,60 @@ jobs:
             .piste span { display:block; height:100%; border-radius:99px;
               background:linear-gradient(90deg,var(--vert),#5ee0b4); }
             .carte.ko .piste span { background:linear-gradient(90deg,var(--rouge),#ff9a94); }
-            .seuil { margin:0; font-size:.7rem; color:#5d6b7c; letter-spacing:.06em;
+            .seuil { margin:0; font-size:.7rem; color:var(--tres-doux); letter-spacing:.06em;
               font-family:"JetBrains Mono", ui-monospace, monospace; }
             .raison { margin:14px 0 0; padding:10px 12px; border-radius:10px; font-size:.82rem;
               background:rgba(255,98,89,.08); color:#ffb3ae; word-break:break-word; }
-            .incident { background:var(--panneau); border:1px solid var(--bord); border-radius:16px;
-              padding:18px 20px; margin-bottom:14px; }
-            .incident-tete { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+            .incident { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
+              padding:16px 18px; margin-bottom:12px; }
+            .incident:last-child { margin-bottom:0; }
+            .incident-tete { display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
             .rang { font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:var(--doux); flex:1; }
-            .incident h3 { margin:0; font-size:.98rem; font-weight:600; }
-            .incident h3 a { color:var(--texte); text-decoration:none; }
-            .incident h3 a:hover { text-decoration:underline; }
-            .incident .quand { margin:4px 0 12px; font-size:.76rem; color:var(--doux);
+            .incident h4 { margin:0; font-size:.95rem; font-weight:600; }
+            .incident h4 a { color:var(--texte); text-decoration:none; }
+            .incident h4 a:hover { text-decoration:underline; }
+            .incident .quand { margin:4px 0 10px; font-size:.76rem; color:var(--doux);
               font-family:"JetBrains Mono", ui-monospace, monospace; }
             .corps { font-size:.82rem; line-height:1.6; color:#b9c6d4; background:#0f151c;
               border:1px solid var(--bord); border-radius:10px; padding:12px 14px; word-break:break-word; }
-            .infra { background:var(--panneau); border:1px solid var(--bord); border-radius:16px; padding:6px 20px; }
-            .infra p { display:flex; justify-content:space-between; align-items:center; gap:12px;
-              margin:0; padding:14px 0; font-size:.9rem; border-bottom:1px solid var(--bord); }
-            .infra p:last-child { border-bottom:none; }
-            .infra small { display:block; color:var(--doux); font-size:.74rem; font-weight:400; }
-            .etat-svc { font-size:.8rem; font-weight:600; white-space:nowrap; color:var(--doux);
+            .coupure { display:flex; align-items:center; gap:14px; margin:38px 0 18px; }
+            .coupure::before, .coupure::after { content:""; flex:1; height:1px; background:var(--bord); }
+            .coupure span { font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:var(--tres-doux); }
+            details.infra { border-top:1px solid var(--bord); border-bottom:1px solid var(--bord); }
+            details.infra summary { list-style:none; cursor:pointer; padding:14px 2px;
+              display:flex; align-items:center; gap:10px; font-size:.85rem; color:var(--doux); }
+            details.infra summary::-webkit-details-marker { display:none; }
+            details.infra summary .fleche { transition:transform .18s; color:var(--tres-doux); font-size:.7rem; }
+            details.infra[open] summary .fleche { transform:rotate(90deg); }
+            details.infra summary strong { font-weight:600; color:#b9c6d4; flex:1; }
+            .infra-resume { font-size:.78rem; font-weight:600; color:var(--tres-doux);
+              font-family:"JetBrains Mono", ui-monospace, monospace; }
+            .infra-corps { padding:4px 2px 22px; }
+            .infra-note { margin:0 0 16px; font-size:.78rem; line-height:1.6; color:var(--tres-doux); }
+            .infra-liste p { display:flex; justify-content:space-between; align-items:center; gap:12px;
+              margin:0; padding:11px 0; font-size:.84rem; color:#b9c6d4; border-bottom:1px solid var(--bord); }
+            .infra-liste p:last-child { border-bottom:none; }
+            .infra-liste small { display:block; color:var(--tres-doux); font-size:.72rem; }
+            .etat-svc { font-size:.78rem; font-weight:600; white-space:nowrap; color:var(--doux);
               font-family:"JetBrains Mono", ui-monospace, monospace; }
             .etat-svc.ok, .ok { color:var(--vert); } .etat-svc.ko, .ko { color:var(--rouge); }
-            .timeline ul { list-style:none; margin:0; padding:0 0 0 18px; border-left:1px solid var(--bord); }
-            .timeline li { position:relative; padding:0 0 18px 18px; }
-            .timeline li::before { content:""; position:absolute; left:-23px; top:6px; width:9px; height:9px;
+            .titre-frise { font-size:.7rem; letter-spacing:.16em; text-transform:uppercase;
+              color:var(--tres-doux); margin:22px 0 12px; font-weight:600; }
+            .timeline ul { list-style:none; margin:0; padding:0 0 0 16px; border-left:1px solid var(--bord); }
+            .timeline li { position:relative; padding:0 0 16px 16px; }
+            .timeline li:last-child { padding-bottom:0; }
+            .timeline li::before { content:""; position:absolute; left:-21px; top:5px; width:9px; height:9px;
               border-radius:50%; background:var(--bord); border:2px solid var(--fond); }
-            .timeline .quand { margin:0 0 3px; font-size:.8rem; font-weight:600;
-              font-family:"JetBrains Mono", ui-monospace, monospace; }
-            .timeline .quoi { margin:0; font-size:.8rem; color:var(--doux); }
-            .timeline a, .infra a { color:#6f8ac4; }
-            .vide { font-size:.85rem; color:var(--doux); margin:0; }
-            footer { margin-top:44px; padding-top:18px; border-top:1px solid var(--bord);
-              font-size:.72rem; color:#5d6b7c; line-height:1.7; }
-            @media (max-width:520px) { h1 { font-size:1.6rem; } .chiffre { font-size:1.9rem; } }
+            .timeline .quand { margin:0 0 3px; font-size:.78rem; font-weight:600;
+              font-family:"JetBrains Mono", ui-monospace, monospace; color:#b9c6d4; }
+            .timeline .quoi { margin:0; font-size:.78rem; color:var(--tres-doux); }
+            .timeline a, .infra-liste a { color:#6f8ac4; }
+            .vide { font-size:.82rem; color:var(--doux); margin:0; }
+            footer { margin-top:28px; font-size:.72rem; color:var(--tres-doux); line-height:1.7; }
+            @media (max-width:520px) {
+              h1 { font-size:1.6rem; } .chiffre { font-size:1.9rem; }
+              .bloc-surveille { padding:16px; border-radius:16px; }
+            }
           </style></head><body>
           <div class="wrap">
             <header class="tete">
@@ -255,17 +295,32 @@ jobs:
               <h1>Ladbrokes.be</h1>
               <p class="horodatage"><span class="pulse"></span>Derniere verification ${date}</p>
             </header>
-            <div id="banniere-retard" class="banniere">Cette page date de <span id="retard-min"></span> minutes. Le monitoring semble retarde : verifiez l etat de GitHub Actions plus bas.</div>
-            ${d.results.map(carte).join("")}
-            <h2 class="section">Derniers incidents detectes</h2>
-            ${incidentHtml}
-            <h2 class="section">Infrastructure du monitoring</h2>
-            <div class="infra">
-              <p>GitHub Actions <small>execute les verifications</small> <span id="gh-actions" class="etat-svc">...</span></p>
-              <p>GitHub Pages <small>heberge cette page</small> <span id="gh-pages" class="etat-svc">...</span></p>
-            </div>
-            <h2 class="section">Incidents GitHub sur ces services</h2>
-            <div id="gh-incidents" class="timeline"><p class="vide">chargement...</p></div>
+            <div id="banniere-retard" class="banniere">Cette page date de <span id="retard-min"></span> minutes. Le monitoring semble retarde : depliez Infrastructure du monitoring en bas de page.</div>
+            <section class="bloc-surveille">
+              <div class="bloc-tete">
+                <h2>Pages surveillees</h2><span>site Ladbrokes.be</span>
+              </div>
+              ${d.results.map(carte).join("")}
+              <p class="sous-titre">Derniers incidents detectes sur ces pages</p>
+              ${incidentHtml}
+            </section>
+            <div class="coupure"><span>Coulisses techniques</span></div>
+            <details class="infra">
+              <summary>
+                <span class="fleche">&#9656;</span>
+                <strong>Infrastructure du monitoring</strong>
+                <span id="infra-resume" class="infra-resume">...</span>
+              </summary>
+              <div class="infra-corps">
+                <p class="infra-note">Ces services ne concernent pas Ladbrokes : ils font tourner la surveillance elle-meme. Si Actions tombe en panne, les verifications sont suspendues et cette page cesse de se mettre a jour.</p>
+                <div class="infra-liste">
+                  <p><span>GitHub Actions <small>execute les verifications</small></span><span id="gh-actions" class="etat-svc">...</span></p>
+                  <p><span>GitHub Pages <small>heberge cette page</small></span><span id="gh-pages" class="etat-svc">...</span></p>
+                </div>
+                <p class="titre-frise">Incidents GitHub recents sur ces services</p>
+                <div id="gh-incidents" class="timeline"><p class="vide">chargement...</p></div>
+              </div>
+            </details>
             <footer>Page regeneree a chaque verification, toutes les 31 minutes. Toutes les heures sont en heure belge (Europe/Brussels). Etat des services GitHub interroge en direct par votre navigateur.</footer>
           </div>
           ${scriptClient}
