@@ -107,6 +107,11 @@ jobs:
             "  document.getElementById(\"banniere-retard\").style.display = \"block\";",
             "  document.getElementById(\"retard-min\").textContent = diff;",
             "}",
+            "function fh(iso, complet) {",
+            "  if (!iso) return null;",
+            "  var opts = complet ? { timeZone: \"Europe/Brussels\", day: \"2-digit\", month: \"2-digit\", year: \"numeric\", hour: \"2-digit\", minute: \"2-digit\" } : { timeZone: \"Europe/Brussels\", hour: \"2-digit\", minute: \"2-digit\" };",
+            "  return new Date(iso).toLocaleString(\"fr-BE\", opts);",
+            "}",
             "fetch(\"https://www.githubstatus.com/api/v2/components.json\")",
             "  .then(function(r){ return r.json(); })",
             "  .then(function(data){",
@@ -121,6 +126,21 @@ jobs:
             "    });",
             "  })",
             "  .catch(function(){});",
+            "fetch(\"https://www.githubstatus.com/api/v2/incidents.json\")",
+            "  .then(function(r){ return r.json(); })",
+            "  .then(function(data){",
+            "    var vise = [\"Actions\", \"Pages\"];",
+            "    var lignes = [];",
+            "    (data.incidents || []).forEach(function(inc){",
+            "      if (lignes.length >= 5) return;",
+            "      var touches = (inc.components || []).map(function(c){ return c.name; }).filter(function(n){ return vise.indexOf(n) >= 0; });",
+            "      if (touches.length === 0) return;",
+            "      var fin = inc.resolved_at ? (\"&#9989; fini \" + fh(inc.resolved_at, true)) : \"&#128308; <strong>EN COURS</strong>\";",
+            "      lignes.push(\"<li><strong>\" + fh(inc.created_at, true) + \"</strong> &rarr; \" + fin + \"<br>\" + inc.name + \" (\" + touches.join(\", \") + \") — <a href=\" + inc.shortlink + \">details</a></li>\");",
+            "    });",
+            "    document.getElementById(\"gh-incidents\").innerHTML = lignes.length ? \"<ul>\" + lignes.join(\"\") + \"</ul>\" : \"Aucun incident recent sur ces services.\";",
+            "  })",
+            "  .catch(function(){ document.getElementById(\"gh-incidents\").textContent = \"Historique indisponible.\"; });",
             "</" + "script>",
           ].join("\n");
           const html = `<!DOCTYPE html>
@@ -144,6 +164,8 @@ jobs:
             .badge { padding:2px 10px; border-radius:20px; font-size:.8rem; font-weight:600; margin-left:6px; }
             .ok-badge { background:#e3f5ec; color:#1b7a4e; }
             .ko-badge { background:#fde8e6; color:#c5221f; }
+            #gh-incidents ul { margin:6px 0 0; padding-left:20px; }
+            #gh-incidents li { margin-bottom:10px; font-size:.9rem; }
           </style></head><body>
           <h1>Statut du monitoring Ladbrokes</h1>
           <p class="maj">Derniere verification : <strong>${date}</strong> (heure belge) — page rafraichie automatiquement</p>
@@ -154,6 +176,8 @@ jobs:
             <h3>Infrastructure du monitoring (etat en temps reel)</h3>
             <p>GitHub Actions (execution des checks) : <span id="gh-actions">verification...</span></p>
             <p>GitHub Pages (hebergement de cette page) : <span id="gh-pages">verification...</span></p>
+            <h3>Derniers incidents GitHub sur ces services (heure belge)</h3>
+            <div id="gh-incidents">chargement...</div>
           </div>
           ${scriptClient}
           </body></html>`;
