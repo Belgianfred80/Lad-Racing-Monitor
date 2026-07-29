@@ -3,62 +3,162 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="refresh" content="300">
 <title>Statut monitoring Ladbrokes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
 <style>
-  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background:#f5f6f8; margin:0; padding:24px; color:#1a1a2e; }
-  h1 { font-size:1.3rem; } .maj { color:#666; margin-bottom:20px; }
-  .banniere { display:none; max-width:720px; margin-bottom:16px; padding:12px 18px; background:#fff3cd; border:1px solid #ffe08a; border-radius:10px; font-size:.95rem; }
-  .carte { background:#fff; border-radius:12px; padding:18px 22px; margin-bottom:16px; max-width:720px; box-shadow:0 1px 4px rgba(0,0,0,.08); border-left:6px solid #22a06b; }
-  .carte.ko { border-left-color:#d93025; }
-  .carte h2 { margin:0 0 6px; font-size:1.05rem; }
-  .url { margin:0 0 10px; font-size:.85rem; word-break:break-all; } .url a { color:#3556c4; }
-  .etat { margin:4px 0; font-size:1rem; }
-  .incident, .services { max-width:720px; margin-top:24px; padding:14px 22px; background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
-  .incident h3, .services h3 { margin:0 0 8px; font-size:.95rem; color:#555; }
-  .incident p, .services p { margin:0 0 10px; font-size:.95rem; } .incident a, .services a { color:#3556c4; }
-  .corps { font-size:.85rem; color:#444; background:#fafbfc; border:1px solid #eceef1; border-radius:8px; padding:10px 14px; word-break:break-all; }
-  .badge { padding:2px 10px; border-radius:20px; font-size:.8rem; font-weight:600; margin-left:6px; }
-  .ok-badge { background:#e3f5ec; color:#1b7a4e; }
-  .ko-badge { background:#fde8e6; color:#c5221f; }
-  #gh-incidents ul { margin:6px 0 0; padding-left:20px; }
-  #gh-incidents li { margin-bottom:10px; font-size:.9rem; }
+  :root {
+    --fond:#0e1319; --panneau:#161d26; --bord:#232d39;
+    --texte:#e8edf3; --doux:#8b98a8;
+    --vert:#37d99a; --rouge:#ff6259; --ambre:#f2b544;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--fond); color:var(--texte);
+    font-family:"Inter Tight", system-ui, -apple-system, Segoe UI, sans-serif;
+    -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:760px; margin:0 auto; padding:40px 20px 64px; }
+  .tete { border-bottom:1px solid var(--bord); padding-bottom:22px; margin-bottom:28px; }
+  .eyebrow { margin:0 0 6px; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--doux); }
+  h1 { margin:0; font-size:2.1rem; font-weight:700; letter-spacing:-.02em; }
+  .horodatage { margin:10px 0 0; font-size:.85rem; color:var(--doux);
+    font-family:"JetBrains Mono", ui-monospace, monospace; }
+  .pulse { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--vert);
+    margin-right:8px; box-shadow:0 0 0 4px rgba(55,217,154,.15); }
+  .banniere { display:none; margin-bottom:24px; padding:14px 18px; border-radius:12px;
+    background:rgba(242,181,68,.1); border:1px solid rgba(242,181,68,.35); color:#f6d79a; font-size:.9rem; }
+  h2.section { font-size:.78rem; letter-spacing:.16em; text-transform:uppercase; color:var(--doux);
+    margin:38px 0 14px; font-weight:600; }
+  .carte { background:var(--panneau); border:1px solid var(--bord); border-radius:16px;
+    padding:20px 22px; margin-bottom:14px; position:relative; overflow:hidden; }
+  .carte::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--vert); }
+  .carte.ko::before { background:var(--rouge); }
+  .carte-tete { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .marque { width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
+    font-size:.72rem; font-weight:700; background:rgba(55,217,154,.16); color:var(--vert); }
+  .carte.ko .marque { background:rgba(255,98,89,.16); color:var(--rouge); }
+  .carte h2 { margin:0; font-size:1.05rem; font-weight:600; flex:1; }
+  .pill { font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; font-weight:700;
+    padding:4px 10px; border-radius:99px; white-space:nowrap; }
+  .pill-ok { background:rgba(55,217,154,.14); color:var(--vert); }
+  .pill-ko { background:rgba(255,98,89,.14); color:var(--rouge); }
+  .url { display:block; margin:10px 0 18px; font-size:.78rem; color:#6f8ac4;
+    font-family:"JetBrains Mono", ui-monospace, monospace; text-decoration:none; word-break:break-all; }
+  .url:hover { color:#9ab2e8; text-decoration:underline; }
+  .mesure { display:flex; align-items:baseline; gap:6px; }
+  .chiffre { font-family:"JetBrains Mono", ui-monospace, monospace; font-size:2.4rem;
+    font-weight:700; line-height:1; letter-spacing:-.03em; }
+  .unite { font-family:"JetBrains Mono", ui-monospace, monospace; font-size:1rem; color:var(--doux); }
+  .libelle { margin-left:8px; font-size:.78rem; color:var(--doux); }
+  .piste { height:5px; border-radius:99px; background:#0a0f14; margin:14px 0 6px; overflow:hidden; }
+  .piste span { display:block; height:100%; border-radius:99px;
+    background:linear-gradient(90deg,var(--vert),#5ee0b4); }
+  .carte.ko .piste span { background:linear-gradient(90deg,var(--rouge),#ff9a94); }
+  .seuil { margin:0; font-size:.7rem; color:#5d6b7c; letter-spacing:.06em;
+    font-family:"JetBrains Mono", ui-monospace, monospace; }
+  .raison { margin:14px 0 0; padding:10px 12px; border-radius:10px; font-size:.82rem;
+    background:rgba(255,98,89,.08); color:#ffb3ae; word-break:break-word; }
+  .incident { background:var(--panneau); border:1px solid var(--bord); border-radius:16px;
+    padding:18px 20px; margin-bottom:14px; }
+  .incident-tete { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .rang { font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:var(--doux); flex:1; }
+  .incident h3 { margin:0; font-size:.98rem; font-weight:600; }
+  .incident h3 a { color:var(--texte); text-decoration:none; }
+  .incident h3 a:hover { text-decoration:underline; }
+  .incident .quand { margin:4px 0 12px; font-size:.76rem; color:var(--doux);
+    font-family:"JetBrains Mono", ui-monospace, monospace; }
+  .corps { font-size:.82rem; line-height:1.6; color:#b9c6d4; background:#0f151c;
+    border:1px solid var(--bord); border-radius:10px; padding:12px 14px; word-break:break-word; }
+  .infra { background:var(--panneau); border:1px solid var(--bord); border-radius:16px; padding:6px 20px; }
+  .infra p { display:flex; justify-content:space-between; align-items:center; gap:12px;
+    margin:0; padding:14px 0; font-size:.9rem; border-bottom:1px solid var(--bord); }
+  .infra p:last-child { border-bottom:none; }
+  .infra small { display:block; color:var(--doux); font-size:.74rem; font-weight:400; }
+  .etat-svc { font-size:.8rem; font-weight:600; white-space:nowrap; color:var(--doux);
+    font-family:"JetBrains Mono", ui-monospace, monospace; }
+  .etat-svc.ok, .ok { color:var(--vert); } .etat-svc.ko, .ko { color:var(--rouge); }
+  .timeline ul { list-style:none; margin:0; padding:0 0 0 18px; border-left:1px solid var(--bord); }
+  .timeline li { position:relative; padding:0 0 18px 18px; }
+  .timeline li::before { content:""; position:absolute; left:-23px; top:6px; width:9px; height:9px;
+    border-radius:50%; background:var(--bord); border:2px solid var(--fond); }
+  .timeline .quand { margin:0 0 3px; font-size:.8rem; font-weight:600;
+    font-family:"JetBrains Mono", ui-monospace, monospace; }
+  .timeline .quoi { margin:0; font-size:.8rem; color:var(--doux); }
+  .timeline a, .infra a { color:#6f8ac4; }
+  .vide { font-size:.85rem; color:var(--doux); margin:0; }
+  footer { margin-top:44px; padding-top:18px; border-top:1px solid var(--bord);
+    font-size:.72rem; color:#5d6b7c; line-height:1.7; }
+  @media (max-width:520px) { h1 { font-size:1.6rem; } .chiffre { font-size:1.9rem; } }
 </style></head><body>
-<h1>Statut du monitoring Ladbrokes</h1>
-<p class="maj">Derniere verification : <strong>29/07/2026 21:37:36</strong> (heure belge) — page rafraichie automatiquement</p>
-<div id="banniere-retard" class="banniere">&#9888;&#65039; Cette page date de <span id="retard-min"></span> minutes : le monitoring semble retarde. Cause probable : incident GitHub (voir etat des services ci-dessous).</div>
-<div class="carte ok">
-    <h2>Courses hippiques (PMU)</h2>
-    <p class="url"><a href="https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing">https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing</a></p>
-    <p class="etat">&#9989; En ligne</p>
-    <p class="etat">&#9989; Vitesse : 4.2 s</p>
-  </div><div class="carte ok">
-    <h2>Courses de lévriers</h2>
-    <p class="url"><a href="https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing">https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing</a></p>
-    <p class="etat">&#9989; En ligne</p>
-    <p class="etat">&#9989; Vitesse : 4.9 s</p>
-  </div>
-<div class="incident">
-      <h3>Dernier incident</h3>
-      <p>29/07/2026 19:52:05 — <a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/5">ALERTE Monitoring Ladbrokes : 2 page(s) en echec</a> <span class="badge ok-badge">Resolu le 29/07/2026 21:25:30</span></p>
-      <div class="corps">Verification du 29/07/2026 19:52:02 (heure belge)<br><br>ECHEC — <strong>Courses hippiques (PMU)</strong><br>URL : https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing<br>Detail : ÉCHEC: page.goto: Timeout 30000ms exceeded.<br>Call log:<br>  - navigating to "https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing", waiting until "domcontentloaded"<br><br><br>ECHEC — <strong>Courses de lévriers</strong><br>URL : https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing<br>Detail : ÉCHEC: 118 éléments de chargement (squelettes) encore visibles<br></div>
+<div class="wrap">
+  <header class="tete">
+    <p class="eyebrow">Surveillance des pages de courses</p>
+    <h1>Ladbrokes.be</h1>
+    <p class="horodatage"><span class="pulse"></span>Derniere verification 29/07/2026 22:10:33</p>
+  </header>
+  <div id="banniere-retard" class="banniere">Cette page date de <span id="retard-min"></span> minutes. Le monitoring semble retarde : verifiez l etat de GitHub Actions plus bas.</div>
+  <article class="carte ok">
+    <div class="carte-tete">
+      <span class="marque">&#10003;</span>
+      <h2>Courses hippiques (PMU)</h2>
+      <span class="pill pill-ok">En ligne</span>
     </div>
-<div class="services">
-  <h3>Infrastructure du monitoring (etat en temps reel)</h3>
-  <p>GitHub Actions (execution des checks) : <span id="gh-actions">verification...</span></p>
-  <p>GitHub Pages (hebergement de cette page) : <span id="gh-pages">verification...</span></p>
-  <h3>Derniers incidents GitHub sur ces services (heure belge)</h3>
-  <div id="gh-incidents">chargement...</div>
+    <a class="url" href="https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing">https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing</a>
+    <div class="mesure">
+      <span class="chiffre">6.7</span><span class="unite">s</span>
+      <span class="libelle">temps de chargement</span>
+    </div>
+    <div class="piste"><span style="width:45%"></span></div>
+    <p class="seuil">seuil 15 s</p>
+    
+  </article><article class="carte ok">
+    <div class="carte-tete">
+      <span class="marque">&#10003;</span>
+      <h2>Courses de lévriers</h2>
+      <span class="pill pill-ok">En ligne</span>
+    </div>
+    <a class="url" href="https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing">https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing</a>
+    <div class="mesure">
+      <span class="chiffre">5.2</span><span class="unite">s</span>
+      <span class="libelle">temps de chargement</span>
+    </div>
+    <div class="piste"><span style="width:34%"></span></div>
+    <p class="seuil">seuil 15 s</p>
+    
+  </article>
+  <h2 class="section">Derniers incidents detectes</h2>
+  <article class="incident ok">
+        <div class="incident-tete">
+          <span class="rang">Le plus recent</span><span class="pill pill-ok">Resolu 29/07/2026 21:25:30</span>
+        </div>
+        <h3><a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/5">ALERTE Monitoring Ladbrokes : 2 page(s) en echec</a></h3>
+        <p class="quand">Ouvert le 29/07/2026 19:52:05</p>
+        <div class="corps">Verification du 29/07/2026 19:52:02 (heure belge)<br><br>ECHEC — <strong>Courses hippiques (PMU)</strong><br>URL : https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing<br>Detail : ÉCHEC: page.goto: Timeout 30000ms exceeded.<br>Call log:<br>  - navigating to "https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing", waiting until "domcontentloaded"<br><br><br>ECHEC — <strong>Courses de lévriers</strong><br>URL : https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing<br>Detail : ÉCHEC: 118 éléments de chargement (squelettes) encore visibles<br></div>
+      </article><article class="incident ok">
+        <div class="incident-tete">
+          <span class="rang">Precedent</span><span class="pill pill-ok">Resolu 23/07/2026 21:26:16</span>
+        </div>
+        <h3><a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/4">ALERTE Monitoring Ladbrokes : 1 page(s) en echec</a></h3>
+        <p class="quand">Ouvert le 23/07/2026 19:45:17</p>
+        <div class="corps">Le monitoring lui-meme a rencontre une erreur technique (aucun resultat produit). Voir les logs du run.</div>
+      </article>
+  <h2 class="section">Infrastructure du monitoring</h2>
+  <div class="infra">
+    <p>GitHub Actions <small>execute les verifications</small> <span id="gh-actions" class="etat-svc">...</span></p>
+    <p>GitHub Pages <small>heberge cette page</small> <span id="gh-pages" class="etat-svc">...</span></p>
+  </div>
+  <h2 class="section">Incidents GitHub sur ces services</h2>
+  <div id="gh-incidents" class="timeline"><p class="vide">chargement...</p></div>
+  <footer>Page regeneree a chaque verification, toutes les 31 minutes. Toutes les heures sont en heure belge (Europe/Brussels). Etat des services GitHub interroge en direct par votre navigateur.</footer>
 </div>
 <script>
-var genere = "2026-07-29T19:37:36.771Z";
+var genere = "2026-07-29T20:10:33.333Z";
 var diff = Math.round((Date.now() - new Date(genere).getTime()) / 60000);
 if (diff > 45) {
   document.getElementById("banniere-retard").style.display = "block";
   document.getElementById("retard-min").textContent = diff;
 }
-function fh(iso, complet) {
+function fh(iso) {
   if (!iso) return null;
-  var opts = complet ? { timeZone: "Europe/Brussels", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" } : { timeZone: "Europe/Brussels", hour: "2-digit", minute: "2-digit" };
-  return new Date(iso).toLocaleString("fr-BE", opts);
+  return new Date(iso).toLocaleString("fr-BE", { timeZone: "Europe/Brussels", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 fetch("https://www.githubstatus.com/api/v2/components.json")
   .then(function(r){ return r.json(); })
@@ -69,8 +169,11 @@ fetch("https://www.githubstatus.com/api/v2/components.json")
       if (!id) return;
       var el = document.getElementById(id);
       if (!el) return;
-      if (c.status === "operational") { el.innerHTML = "&#9989; Operationnel"; }
-      else { el.innerHTML = "&#128308; " + c.status.split("_").join(" ") + " — voir <a href=https://www.githubstatus.com>githubstatus.com</a>"; }
+      if (c.status === "operational") {
+        el.className = "etat-svc ok"; el.innerHTML = "&#10003; Operationnel";
+      } else {
+        el.className = "etat-svc ko"; el.innerHTML = "&#10005; " + c.status.split("_").join(" ");
+      }
     });
   })
   .catch(function(){});
@@ -83,11 +186,11 @@ fetch("https://www.githubstatus.com/api/v2/incidents.json")
       if (lignes.length >= 5) return;
       var touches = (inc.components || []).map(function(c){ return c.name; }).filter(function(n){ return vise.indexOf(n) >= 0; });
       if (touches.length === 0) return;
-      var fin = inc.resolved_at ? ("&#9989; fini " + fh(inc.resolved_at, true)) : "&#128308; <strong>EN COURS</strong>";
-      lignes.push("<li><strong>" + fh(inc.created_at, true) + "</strong> &rarr; " + fin + "<br>" + inc.name + " (" + touches.join(", ") + ") — <a href=" + inc.shortlink + ">details</a></li>");
+      var fin = inc.resolved_at ? ("<span class=ok>fini " + fh(inc.resolved_at) + "</span>") : "<span class=ko>en cours</span>";
+      lignes.push("<li><p class=quand>" + fh(inc.created_at) + " &rarr; " + fin + "</p><p class=quoi>" + inc.name + " — " + touches.join(", ") + " · <a href=" + inc.shortlink + ">details</a></p></li>");
     });
-    document.getElementById("gh-incidents").innerHTML = lignes.length ? "<ul>" + lignes.join("") + "</ul>" : "Aucun incident recent sur ces services.";
+    document.getElementById("gh-incidents").innerHTML = lignes.length ? "<ul>" + lignes.join("") + "</ul>" : "<p class=vide>Aucun incident recent sur ces services.</p>";
   })
-  .catch(function(){ document.getElementById("gh-incidents").textContent = "Historique indisponible."; });
+  .catch(function(){ document.getElementById("gh-incidents").innerHTML = "<p class=vide>Historique indisponible.</p>"; });
 </script>
 </body></html>
