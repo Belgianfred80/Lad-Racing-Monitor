@@ -19,37 +19,46 @@
   .badge { padding:2px 10px; border-radius:20px; font-size:.8rem; font-weight:600; margin-left:6px; }
   .ok-badge { background:#e3f5ec; color:#1b7a4e; }
   .ko-badge { background:#fde8e6; color:#c5221f; }
+  #gh-incidents ul { margin:6px 0 0; padding-left:20px; }
+  #gh-incidents li { margin-bottom:10px; font-size:.9rem; }
 </style></head><body>
 <h1>Statut du monitoring Ladbrokes</h1>
-<p class="maj">Derniere verification : <strong>29/07/2026 21:25:27</strong> (heure belge) — page rafraichie automatiquement</p>
+<p class="maj">Derniere verification : <strong>29/07/2026 21:37:36</strong> (heure belge) — page rafraichie automatiquement</p>
 <div id="banniere-retard" class="banniere">&#9888;&#65039; Cette page date de <span id="retard-min"></span> minutes : le monitoring semble retarde. Cause probable : incident GitHub (voir etat des services ci-dessous).</div>
 <div class="carte ok">
     <h2>Courses hippiques (PMU)</h2>
     <p class="url"><a href="https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing">https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing</a></p>
     <p class="etat">&#9989; En ligne</p>
-    <p class="etat">&#9989; Vitesse : 5.0 s</p>
+    <p class="etat">&#9989; Vitesse : 4.2 s</p>
   </div><div class="carte ok">
     <h2>Courses de lévriers</h2>
     <p class="url"><a href="https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing">https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing</a></p>
     <p class="etat">&#9989; En ligne</p>
-    <p class="etat">&#9989; Vitesse : 4.7 s</p>
+    <p class="etat">&#9989; Vitesse : 4.9 s</p>
   </div>
 <div class="incident">
       <h3>Dernier incident</h3>
-      <p>29/07/2026 19:52:05 — <a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/5">ALERTE Monitoring Ladbrokes : 2 page(s) en echec</a> <span class="badge ko-badge">EN COURS</span></p>
+      <p>29/07/2026 19:52:05 — <a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/5">ALERTE Monitoring Ladbrokes : 2 page(s) en echec</a> <span class="badge ok-badge">Resolu le 29/07/2026 21:25:30</span></p>
       <div class="corps">Verification du 29/07/2026 19:52:02 (heure belge)<br><br>ECHEC — <strong>Courses hippiques (PMU)</strong><br>URL : https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing<br>Detail : ÉCHEC: page.goto: Timeout 30000ms exceeded.<br>Call log:<br>  - navigating to "https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing", waiting until "domcontentloaded"<br><br><br>ECHEC — <strong>Courses de lévriers</strong><br>URL : https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing<br>Detail : ÉCHEC: 118 éléments de chargement (squelettes) encore visibles<br></div>
     </div>
 <div class="services">
   <h3>Infrastructure du monitoring (etat en temps reel)</h3>
   <p>GitHub Actions (execution des checks) : <span id="gh-actions">verification...</span></p>
   <p>GitHub Pages (hebergement de cette page) : <span id="gh-pages">verification...</span></p>
+  <h3>Derniers incidents GitHub sur ces services (heure belge)</h3>
+  <div id="gh-incidents">chargement...</div>
 </div>
 <script>
-var genere = "2026-07-29T19:25:27.515Z";
+var genere = "2026-07-29T19:37:36.771Z";
 var diff = Math.round((Date.now() - new Date(genere).getTime()) / 60000);
 if (diff > 45) {
   document.getElementById("banniere-retard").style.display = "block";
   document.getElementById("retard-min").textContent = diff;
+}
+function fh(iso, complet) {
+  if (!iso) return null;
+  var opts = complet ? { timeZone: "Europe/Brussels", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" } : { timeZone: "Europe/Brussels", hour: "2-digit", minute: "2-digit" };
+  return new Date(iso).toLocaleString("fr-BE", opts);
 }
 fetch("https://www.githubstatus.com/api/v2/components.json")
   .then(function(r){ return r.json(); })
@@ -65,5 +74,20 @@ fetch("https://www.githubstatus.com/api/v2/components.json")
     });
   })
   .catch(function(){});
+fetch("https://www.githubstatus.com/api/v2/incidents.json")
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var vise = ["Actions", "Pages"];
+    var lignes = [];
+    (data.incidents || []).forEach(function(inc){
+      if (lignes.length >= 5) return;
+      var touches = (inc.components || []).map(function(c){ return c.name; }).filter(function(n){ return vise.indexOf(n) >= 0; });
+      if (touches.length === 0) return;
+      var fin = inc.resolved_at ? ("&#9989; fini " + fh(inc.resolved_at, true)) : "&#128308; <strong>EN COURS</strong>";
+      lignes.push("<li><strong>" + fh(inc.created_at, true) + "</strong> &rarr; " + fin + "<br>" + inc.name + " (" + touches.join(", ") + ") — <a href=" + inc.shortlink + ">details</a></li>");
+    });
+    document.getElementById("gh-incidents").innerHTML = lignes.length ? "<ul>" + lignes.join("") + "</ul>" : "Aucun incident recent sur ces services.";
+  })
+  .catch(function(){ document.getElementById("gh-incidents").textContent = "Historique indisponible."; });
 </script>
 </body></html>
