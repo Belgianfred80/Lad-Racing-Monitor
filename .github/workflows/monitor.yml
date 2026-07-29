@@ -321,7 +321,7 @@ jobs:
                 <div id="gh-incidents" class="timeline"><p class="vide">chargement...</p></div>
               </div>
             </details>
-            <footer>Page regeneree a chaque verification, toutes les 31 minutes. Toutes les heures sont en heure belge (Europe/Brussels). Etat des services GitHub interroge en direct par votre navigateur.</footer>
+            <footer>Page regeneree a chaque verification, toutes les 31 minutes. Toutes les heures sont en heure belge (Europe/Brussels). Etat des services GitHub interroge en direct par votre navigateur. BELFLA 2026.</footer>
           </div>
           ${scriptClient}
           </body></html>`;
