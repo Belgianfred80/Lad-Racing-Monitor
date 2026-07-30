@@ -2,7 +2,7 @@ name: Monitoring Ladbrokes
 
 on:
   schedule:
-    - cron: "*/31 * * * *"
+    - cron: "7,38 * * * *"
   workflow_dispatch: {}
 
 permissions:
