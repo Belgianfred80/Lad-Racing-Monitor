@@ -126,30 +126,27 @@
   <header class="tete">
     <p class="eyebrow">Surveillance des pages de courses</p>
     <h1>Ladbrokes.be</h1>
-    <p class="horodatage"><span class="pulse"></span>Derniere verification 31/07/2026 17:38:01</p>
+    <p class="horodatage"><span class="pulse"></span>Derniere verification 31/07/2026 17:49:32</p>
   </header>
   <div id="banniere-retard" class="banniere">Cette page date de <span id="retard-min"></span> minutes. Le monitoring semble retarde : depliez Infrastructure du monitoring en bas de page.</div>
   <section class="bloc-surveille">
     <div class="bloc-tete">
       <h2>Pages surveillees</h2><span>site Ladbrokes.be</span>
     </div>
-    <article class="carte ko">
+    <article class="carte ok">
     <div class="carte-tete">
-      <span class="marque">&#10005;</span>
+      <span class="marque">&#10003;</span>
       <h3>Courses hippiques (PMU)</h3>
-      <span class="pill pill-ko">Probleme</span>
+      <span class="pill pill-ok">En ligne</span>
     </div>
     <a class="url" href="https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing">https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing</a>
     <div class="mesure">
-      <span class="chiffre">30.0</span><span class="unite">s</span>
+      <span class="chiffre">5.9</span><span class="unite">s</span>
       <span class="libelle">temps de chargement</span>
     </div>
-    <div class="piste"><span style="width:100%"></span></div>
+    <div class="piste"><span style="width:39%"></span></div>
     <p class="seuil">seuil 15 s</p>
-    <p class="raison">ÉCHEC: page.goto: Timeout 30000ms exceeded.
-Call log:
-  - navigating to "https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing", waiting until "domcontentloaded"
-</p>
+    
   </article><article class="carte ok">
     <div class="carte-tete">
       <span class="marque">&#10003;</span>
@@ -166,20 +163,20 @@ Call log:
     
   </article>
     <p class="sous-titre">Derniers incidents detectes sur ces pages</p>
-    <article class="incident ok">
+    <article class="incident ko">
         <div class="incident-tete">
-          <span class="rang">Le plus recent</span><span class="pill pill-ok">Resolu 31/07/2026 17:25:41</span>
+          <span class="rang">Le plus recent</span><span class="pill pill-ko">En cours</span>
+        </div>
+        <h4><a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/7">ALERTE Monitoring Ladbrokes : 1 page(s) en echec</a></h4>
+        <p class="quand">Ouvert le 31/07/2026 17:38:05</p>
+        <div class="corps">Verification du 31/07/2026 17:38:01 (heure belge)<br><br>ECHEC — <strong>Courses hippiques (PMU)</strong><br>URL : https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing<br>Detail : ÉCHEC: page.goto: Timeout 30000ms exceeded.<br>Call log:<br>  - navigating to "https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing", waiting until "domcontentloaded"<br><br><br>OK — <strong>Courses de lévriers</strong><br>URL : https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing<br>Detail : Temps de chargement: 6.0s<br></div>
+      </article><article class="incident ok">
+        <div class="incident-tete">
+          <span class="rang">Precedent</span><span class="pill pill-ok">Resolu 31/07/2026 17:25:41</span>
         </div>
         <h4><a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/6">ALERTE Monitoring Ladbrokes : 1 page(s) en echec</a></h4>
         <p class="quand">Ouvert le 31/07/2026 17:13:22</p>
         <div class="corps">Verification du 31/07/2026 17:13:19 (heure belge)<br><br>ECHEC — <strong>Courses hippiques (PMU)</strong><br>URL : https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing<br>Detail : ÉCHEC: 55 éléments de chargement (squelettes) encore visibles<br><br>OK — <strong>Courses de lévriers</strong><br>URL : https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing<br>Detail : Temps de chargement: 4.8s<br></div>
-      </article><article class="incident ok">
-        <div class="incident-tete">
-          <span class="rang">Precedent</span><span class="pill pill-ok">Resolu 29/07/2026 21:25:30</span>
-        </div>
-        <h4><a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/5">ALERTE Monitoring Ladbrokes : 2 page(s) en echec</a></h4>
-        <p class="quand">Ouvert le 29/07/2026 19:52:05</p>
-        <div class="corps">Verification du 29/07/2026 19:52:02 (heure belge)<br><br>ECHEC — <strong>Courses hippiques (PMU)</strong><br>URL : https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing<br>Detail : ÉCHEC: page.goto: Timeout 30000ms exceeded.<br>Call log:<br>  - navigating to "https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing", waiting until "domcontentloaded"<br><br><br>ECHEC — <strong>Courses de lévriers</strong><br>URL : https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing<br>Detail : ÉCHEC: 118 éléments de chargement (squelettes) encore visibles<br></div>
       </article>
   </section>
   <div class="coupure"><span>Coulisses techniques</span></div>
@@ -213,7 +210,7 @@ Call log:
   <footer>Page regeneree a chaque verification. Toutes les heures sont en heure belge (Europe/Brussels). Etat des services GitHub interroge en direct par votre navigateur.</footer>
 </div>
 <script>
-var genere = "2026-07-31T15:38:01.712Z";
+var genere = "2026-07-31T15:49:32.193Z";
 var diff = Math.round((Date.now() - new Date(genere).getTime()) / 60000);
 if (diff > 45) {
   document.getElementById("banniere-retard").style.display = "block";
