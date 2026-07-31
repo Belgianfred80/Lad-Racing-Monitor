@@ -8,7 +8,6 @@ on:
 permissions:
   contents: write
   issues: write
-  actions: read
 
 concurrency:
   group: monitoring
@@ -44,13 +43,6 @@ jobs:
         run: |
           gh issue list --label monitoring --state all --limit 2 --json title,body,url,state,createdAt,closedAt > dernier_incident.json || echo "[]" > dernier_incident.json
 
-      - name: Recuperer les derniers declenchements
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh run list --workflow monitor.yml --limit 7 --json databaseId,event,createdAt,startedAt,updatedAt,conclusion,status,url > runs.json || echo "[]" > runs.json
-
       - name: Generer le rapport et la page de statut
         if: always()
         env:
@@ -69,7 +61,6 @@ jobs:
           let seuilMs = 15000;
           try { seuilMs = require("./monitor/pages.config.js").maxLoadTimeMs || 15000; } catch(e) {}
           const fdate = (iso) => new Date(iso).toLocaleString("fr-BE", { timeZone: "Europe/Brussels" });
-          const fcourt = (iso) => new Date(iso).toLocaleString("fr-BE", { timeZone: "Europe/Brussels", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
           const date = fdate(d.date);
           const detail = (r) => r.details[r.details.length-1].split("|").join("-");
           const echapper = (t) => String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -107,37 +98,6 @@ jobs:
                   <div class="corps">${corps}</div>
                 </article>`;
               }).join("");
-            }
-          } catch(e) {}
-          let frise = "<p class=\"vide\">Historique indisponible.</p>";
-          let synthese = "";
-          try {
-            const runs = JSON.parse(fs.readFileSync("runs.json")).slice(0, 6);
-            if (runs.length) {
-              frise = "<ul class=\"runs\">" + runs.map(function(r) {
-                const externe = r.event !== "schedule";
-                const origine = externe ? "declencheur externe" : "planning GitHub";
-                let etat = "<span class=\"ok\">termine</span>";
-                if (r.conclusion === "failure") { etat = "<span class=\"ko\">echec</span>"; }
-                else if (!r.conclusion) { etat = "<span class=\"doux\">en cours</span>"; }
-                let duree = "";
-                if (r.startedAt && r.updatedAt && r.conclusion) {
-                  const s = Math.round((new Date(r.updatedAt) - new Date(r.startedAt)) / 1000);
-                  if (s > 0 && s < 3600) { duree = " &middot; " + s + " s"; }
-                }
-                return `<li><span class="run-h">${fcourt(r.createdAt)}</span>
-                  <span class="run-o ${externe ? "externe" : "interne"}">${origine}</span>
-                  <span class="run-e"><a href="${r.url}">${etat}</a>${duree}</span></li>`;
-              }).join("") + "</ul>";
-              const dernierExterne = runs.filter(function(r){ return r.event !== "schedule"; })[0];
-              if (dernierExterne) {
-                const min = Math.round((Date.now() - new Date(dernierExterne.createdAt).getTime()) / 60000);
-                synthese = min > 75
-                  ? `<p class="synthese alerte">Aucun declenchement externe depuis ${min} minutes : verifiez le planificateur (jeton expire ?).</p>`
-                  : `<p class="synthese">Declencheur externe actif — dernier appel il y a ${min} minute(s).</p>`;
-              } else {
-                synthese = `<p class="synthese alerte">Aucun declenchement externe dans les 6 dernieres executions : seul le planning GitHub tourne.</p>`;
-              }
             }
           } catch(e) {}
           const carte = (r) => {
@@ -311,7 +271,14 @@ jobs:
             .infra-resume { font-size:.78rem; font-weight:600; color:var(--tres-doux);
               font-family:"JetBrains Mono", ui-monospace, monospace; }
             .infra-corps { padding:4px 2px 22px; }
-            .infra-note { margin:0 0 16px; font-size:.78rem; line-height:1.6; color:var(--tres-doux); }
+            .infra-note { margin:0 0 18px; font-size:.78rem; line-height:1.6; color:var(--tres-doux); }
+            .sous-bloc { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
+              padding:16px 18px; margin-bottom:14px; }
+            .sous-bloc:last-child { margin-bottom:0; }
+            .sous-bloc-tete { display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+            .sous-bloc-tete h4 { margin:0; font-size:.9rem; font-weight:600; color:var(--texte); }
+            .sous-bloc-tete span { font-size:.72rem; color:var(--tres-doux); }
+            .sous-bloc .role { margin:0 0 14px; font-size:.78rem; line-height:1.6; color:var(--tres-doux); }
             .infra-liste p { display:flex; justify-content:space-between; align-items:center; gap:12px;
               margin:0; padding:11px 0; font-size:.84rem; color:#b9c6d4; border-bottom:1px solid var(--bord); }
             .infra-liste p:last-child { border-bottom:none; }
@@ -319,24 +286,8 @@ jobs:
             .etat-svc { font-size:.78rem; font-weight:600; white-space:nowrap; color:var(--doux);
               font-family:"JetBrains Mono", ui-monospace, monospace; }
             .etat-svc.ok, .ok { color:var(--vert); } .etat-svc.ko, .ko { color:var(--rouge); }
-            .doux { color:var(--doux); }
-            .titre-frise { font-size:.7rem; letter-spacing:.16em; text-transform:uppercase;
-              color:var(--tres-doux); margin:22px 0 12px; font-weight:600; }
-            .synthese { margin:0 0 12px; font-size:.8rem; color:var(--doux); }
-            .synthese.alerte { color:#f6d79a; }
-            ul.runs { list-style:none; margin:0 0 6px; padding:0; }
-            ul.runs li { display:flex; align-items:center; gap:12px; padding:9px 0;
-              border-bottom:1px solid var(--bord); font-size:.8rem; }
-            ul.runs li:last-child { border-bottom:none; }
-            .run-h { font-family:"JetBrains Mono", ui-monospace, monospace; color:#b9c6d4; white-space:nowrap; }
-            .run-o { flex:1; color:var(--tres-doux); }
-            .run-o.externe { color:#6f8ac4; }
-            .run-e { font-family:"JetBrains Mono", ui-monospace, monospace; color:var(--tres-doux); white-space:nowrap; }
-            .run-e a { text-decoration:none; }
-            .liens { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 0; }
-            .liens a { font-size:.78rem; color:#6f8ac4; text-decoration:none;
-              border:1px solid var(--bord); border-radius:99px; padding:6px 14px; }
-            .liens a:hover { border-color:#6f8ac4; }
+            .titre-frise { font-size:.68rem; letter-spacing:.16em; text-transform:uppercase;
+              color:var(--tres-doux); margin:18px 0 10px; font-weight:600; }
             .timeline ul { list-style:none; margin:0; padding:0 0 0 16px; border-left:1px solid var(--bord); }
             .timeline li { position:relative; padding:0 0 16px 16px; }
             .timeline li:last-child { padding-bottom:0; }
@@ -346,12 +297,14 @@ jobs:
               font-family:"JetBrains Mono", ui-monospace, monospace; color:#b9c6d4; }
             .timeline .quoi { margin:0; font-size:.78rem; color:var(--tres-doux); }
             .timeline a, .infra-liste a { color:#6f8ac4; }
+            .bouton { display:inline-block; font-size:.78rem; color:#6f8ac4; text-decoration:none;
+              border:1px solid var(--bord); border-radius:99px; padding:7px 16px; }
+            .bouton:hover { border-color:#6f8ac4; color:#9ab2e8; }
             .vide { font-size:.82rem; color:var(--doux); margin:0; }
             footer { margin-top:28px; font-size:.72rem; color:var(--tres-doux); line-height:1.7; }
             @media (max-width:520px) {
               h1 { font-size:1.6rem; } .chiffre { font-size:1.9rem; }
               .bloc-surveille { padding:16px; border-radius:16px; }
-              ul.runs li { flex-wrap:wrap; gap:6px; }
             }
           </style></head><body>
           <div class="wrap">
@@ -377,21 +330,24 @@ jobs:
                 <span id="infra-resume" class="infra-resume">...</span>
               </summary>
               <div class="infra-corps">
-                <p class="infra-note">Ces services ne concernent pas Ladbrokes : ils font tourner la surveillance elle-meme. Le planificateur externe declenche les verifications, GitHub Actions les execute, GitHub Pages heberge cette page.</p>
-                <p class="titre-frise">Derniers declenchements</p>
-                ${synthese}
-                ${frise}
-                <div class="liens">
-                  <a href="${cronUrl}">Statut du planificateur (cron-job.org)</a>
-                  <a href="${actionsUrl}">Historique complet des executions</a>
+                <p class="infra-note">Ces services ne concernent pas Ladbrokes : ils font tourner la surveillance elle-meme.</p>
+                <div class="sous-bloc">
+                  <div class="sous-bloc-tete"><h4>1. Planificateur</h4><span>cron-job.org</span></div>
+                  <p class="role">Declenche une verification toutes les 12 minutes, de 07h00 a 23h48. Son historique de declenchements et son etat sont consultables sur sa propre page de statut.</p>
+                  <a class="bouton" href="${cronUrl}">Statut du planificateur (cron-job.org)</a>
                 </div>
-                <p class="titre-frise">Etat des services GitHub</p>
-                <div class="infra-liste">
-                  <p><span>GitHub Actions <small>execute les verifications</small></span><span id="gh-actions" class="etat-svc">...</span></p>
-                  <p><span>GitHub Pages <small>heberge cette page</small></span><span id="gh-pages" class="etat-svc">...</span></p>
+                <div class="sous-bloc">
+                  <div class="sous-bloc-tete"><h4>2. Execution et hebergement</h4><span>GitHub</span></div>
+                  <p class="role">GitHub Actions execute les verifications demandees par le planificateur ; GitHub Pages heberge cette page. Si Actions tombe en panne, les verifications sont suspendues et cette page cesse de se mettre a jour.</p>
+                  <div class="infra-liste">
+                    <p><span>GitHub Actions <small>execute les verifications</small></span><span id="gh-actions" class="etat-svc">...</span></p>
+                    <p><span>GitHub Pages <small>heberge cette page</small></span><span id="gh-pages" class="etat-svc">...</span></p>
+                  </div>
+                  <p class="titre-frise">Incidents GitHub recents sur ces services</p>
+                  <div id="gh-incidents" class="timeline"><p class="vide">chargement...</p></div>
+                  <p class="titre-frise">Executions</p>
+                  <a class="bouton" href="${actionsUrl}">Historique complet des executions</a>
                 </div>
-                <p class="titre-frise">Incidents GitHub recents sur ces services</p>
-                <div id="gh-incidents" class="timeline"><p class="vide">chargement...</p></div>
               </div>
             </details>
             <footer>Page regeneree a chaque verification. Toutes les heures sont en heure belge (Europe/Brussels). Etat des services GitHub interroge en direct par votre navigateur.</footer>
