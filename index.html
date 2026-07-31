@@ -126,7 +126,7 @@
   <header class="tete">
     <p class="eyebrow">Surveillance des pages de courses</p>
     <h1>Ladbrokes.be</h1>
-    <p class="horodatage"><span class="pulse"></span>Derniere verification 31/07/2026 22:01:59</p>
+    <p class="horodatage"><span class="pulse"></span>Derniere verification 31/07/2026 22:25:24</p>
   </header>
   <div id="banniere-retard" class="banniere">Cette page date de <span id="retard-min"></span> minutes. Le monitoring semble retarde : depliez Infrastructure du monitoring en bas de page.</div>
   <section class="bloc-surveille">
@@ -141,10 +141,10 @@
     </div>
     <a class="url" href="https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing">https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing</a>
     <div class="mesure">
-      <span class="chiffre">6.1</span><span class="unite">s</span>
+      <span class="chiffre">4.5</span><span class="unite">s</span>
       <span class="libelle">temps de chargement</span>
     </div>
-    <div class="piste"><span style="width:40%"></span></div>
+    <div class="piste"><span style="width:30%"></span></div>
     <p class="seuil">seuil 15 s</p>
     
   </article><article class="carte ok">
@@ -155,28 +155,28 @@
     </div>
     <a class="url" href="https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing">https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing</a>
     <div class="mesure">
-      <span class="chiffre">5.4</span><span class="unite">s</span>
+      <span class="chiffre">4.8</span><span class="unite">s</span>
       <span class="libelle">temps de chargement</span>
     </div>
-    <div class="piste"><span style="width:36%"></span></div>
+    <div class="piste"><span style="width:32%"></span></div>
     <p class="seuil">seuil 15 s</p>
     
   </article>
     <p class="sous-titre">Derniers incidents detectes sur ces pages</p>
-    <article class="incident ok">
+    <article class="incident ko">
         <div class="incident-tete">
-          <span class="rang">Le plus recent</span><span class="pill pill-ok">Resolu 31/07/2026 18:59:11</span>
+          <span class="rang">Le plus recent</span><span class="pill pill-ko">En cours</span>
+        </div>
+        <h4><a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/10">ALERTE Monitoring Ladbrokes : 1 page(s) en echec</a></h4>
+        <p class="quand">Ouvert le 31/07/2026 22:23:01</p>
+        <div class="corps">Le monitoring lui-meme a rencontre une erreur technique (aucun resultat produit). Voir les logs du run.</div>
+      </article><article class="incident ok">
+        <div class="incident-tete">
+          <span class="rang">Precedent</span><span class="pill pill-ok">Resolu 31/07/2026 18:59:11</span>
         </div>
         <h4><a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/9">ALERTE Monitoring Ladbrokes : 1 page(s) en echec</a></h4>
         <p class="quand">Ouvert le 31/07/2026 18:49:24</p>
         <div class="corps">Verification du 31/07/2026 18:49:21 (heure belge)<br><br>ECHEC — <strong>Courses hippiques (PMU)</strong><br>URL : https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing<br>Detail : ÉCHEC: 55 éléments de chargement (squelettes) encore visibles<br><br>OK — <strong>Courses de lévriers</strong><br>URL : https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing<br>Detail : Temps de chargement: 6.0s<br></div>
-      </article><article class="incident ok">
-        <div class="incident-tete">
-          <span class="rang">Precedent</span><span class="pill pill-ok">Resolu 31/07/2026 18:25:40</span>
-        </div>
-        <h4><a href="https://github.com/Belgianfred80/Lad-Racing-Monitor/issues/8">ALERTE Monitoring Ladbrokes : 1 page(s) en echec</a></h4>
-        <p class="quand">Ouvert le 31/07/2026 18:13:56</p>
-        <div class="corps">Verification du 31/07/2026 18:13:53 (heure belge)<br><br>ECHEC — <strong>Courses hippiques (PMU)</strong><br>URL : https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing<br>Detail : ÉCHEC: page.goto: Timeout 30000ms exceeded.<br>Call log:<br>  - navigating to "https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing", waiting until "domcontentloaded"<br><br><br>OK — <strong>Courses de lévriers</strong><br>URL : https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing<br>Detail : Temps de chargement: 5.2s<br></div>
       </article>
   </section>
   <div class="coupure"><span>Coulisses techniques</span></div>
@@ -210,7 +210,7 @@
   <footer>Page regeneree a chaque verification. Toutes les heures sont en heure belge (Europe/Brussels). Etat des services GitHub interroge en direct par votre navigateur.</footer>
 </div>
 <script>
-var genere = "2026-07-31T20:01:59.971Z";
+var genere = "2026-07-31T20:25:24.037Z";
 var diff = Math.round((Date.now() - new Date(genere).getTime()) / 60000);
 if (diff > 45) {
   document.getElementById("banniere-retard").style.display = "block";
