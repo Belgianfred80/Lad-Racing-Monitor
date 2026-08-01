@@ -132,7 +132,7 @@ jobs:
             const secondes = r.loadTimeMs ? (r.loadTimeMs / 1000).toFixed(1) : null;
             const pct = r.loadTimeMs ? Math.min(100, Math.round((r.loadTimeMs / seuilMs) * 100)) : 0;
             const raison = r.ok ? "" : `<p class="raison">${echapper(detail(r))}</p>`;
-            return `<article class="carte ${r.ok ? "ok" : "ko"}" data-page="${echapper(r.name)}">
+            return `<article class="carte ${r.ok ? "ok" : "ko"}">
               <div class="carte-tete">
                 <span class="marque">${r.ok ? "&#10003;" : "&#10005;"}</span>
                 <h3>${r.name}</h3>
@@ -146,7 +146,7 @@ jobs:
               <div class="piste"><span style="width:${pct}%"></span></div>
               <p class="seuil">seuil ${(seuilMs / 1000).toFixed(0)} s</p>
               ${raison}
-              <div class="graph" id="graph-${idx}">
+              <div class="graph">
                 <div class="graph-tete">
                   <span class="dispo" id="dispo-${idx}">&nbsp;</span>
                   <span class="periode-info" id="pinfo-${idx}"></span>
@@ -160,12 +160,14 @@ jobs:
           const actionsUrl = process.env.REPO_ACTIONS_URL || "https://github.com";
           const archiveUrl = process.env.REPO_ARCHIVE_URL || "https://github.com";
           const noms = d.results.map(function(r){ return r.name; });
+          const G = String.fromCharCode(34);
           const scriptClient = [
             "<script>",
             "var HIST = " + JSON.stringify(hist) + ";",
             "var NOMS = " + JSON.stringify(noms) + ";",
             "var SEUIL = " + seuilMs + ";",
-            "var genere = \"" + d.date + "\";",
+            "var G = String.fromCharCode(34);",
+            "var genere = " + JSON.stringify(d.date) + ";",
             "var diff = Math.round((Date.now() - new Date(genere).getTime()) / 60000);",
             "if (diff > 45) {",
             "  document.getElementById(\"banniere-retard\").style.display = \"block\";",
@@ -205,16 +207,16 @@ jobs:
             "    dispo.className = \"dispo \" + classeT;",
             "    dispo.innerHTML = taux.toFixed(1).replace(\".0\", \"\") + \" % de disponibilite\";",
             "    pinfo.textContent = serie.length + \" verifications \" + (periode === 1 ? \"sur 24 h\" : \"sur 7 jours\");",
-            "    var W = 640, H = 150, mg = { g: 34, d: 8, h: 12, b: 18 };",
-            "    var iw = W - mg.g - mg.d, ih = H - mg.h - mg.b;",
+            "    var W = 640, H = 150, mgg = 34, mgd = 8, mgh = 12, mgb = 18;",
+            "    var iw = W - mgg - mgd, ih = H - mgh - mgb;",
             "    var vals = serie.filter(function(s){ return s.ms; }).map(function(s){ return s.ms; });",
             "    var maxV = Math.max(SEUIL, vals.length ? Math.max.apply(null, vals) : SEUIL);",
             "    maxV = Math.ceil(maxV / 5000) * 5000;",
             "    var t0 = new Date(serie[0].t).getTime();",
             "    var t1 = new Date(serie[serie.length-1].t).getTime();",
             "    var etendue = Math.max(1, t1 - t0);",
-            "    var X = function(t){ return mg.g + ((new Date(t).getTime() - t0) / etendue) * iw; };",
-            "    var Y = function(ms){ return mg.h + ih - (ms / maxV) * ih; };",
+            "    var X = function(t){ return mgg + ((new Date(t).getTime() - t0) / etendue) * iw; };",
+            "    var Y = function(ms){ return mgh + ih - (ms / maxV) * ih; };",
             "    var chemin = \"\", ouvert = false;",
             "    serie.forEach(function(s){",
             "      if (s.ms) { chemin += (ouvert ? \" L \" : \" M \") + X(s.t).toFixed(1) + \" \" + Y(s.ms).toFixed(1); ouvert = true; }",
@@ -226,14 +228,14 @@ jobs:
             "    var grilles = \"\", etiquettes = \"\";",
             "    [0, 0.5, 1].forEach(function(f){",
             "      var v = maxV * f, y = Y(v);",
-            "      grilles += \"<line x1=\" + mg.g + \" y1=\" + y.toFixed(1) + \" x2=\" + (W - mg.d) + \" y2=\" + y.toFixed(1) + \" class=grille />\";",
-            "      etiquettes += \"<text x=\" + (mg.g - 6) + \" y=\" + (y + 3).toFixed(1) + \" class=axe text-anchor=end>\" + (v / 1000).toFixed(0) + \"s</text>\";",
+            "      grilles += \"<line x1=\" + mgg + \" y1=\" + y.toFixed(1) + \" x2=\" + (W - mgd) + \" y2=\" + y.toFixed(1) + \" class=grille />\";",
+            "      etiquettes += \"<text x=\" + (mgg - 6) + \" y=\" + (y + 3).toFixed(1) + \" class=axe text-anchor=end>\" + (v / 1000).toFixed(0) + \"s</text>\";",
             "    });",
             "    var ySeuil = Y(SEUIL);",
-            "    var ligneSeuil = \"<line x1=\" + mg.g + \" y1=\" + ySeuil.toFixed(1) + \" x2=\" + (W - mg.d) + \" y2=\" + ySeuil.toFixed(1) + \" class=seuil-l />\";",
-            "    var tempsD = \"<text x=\" + mg.g + \" y=\" + (H - 4) + \" class=axe>\" + heureCourte(serie[0].t, periode > 1) + \"</text>\";",
-            "    var tempsF = \"<text x=\" + (W - mg.d) + \" y=\" + (H - 4) + \" class=axe text-anchor=end>\" + heureCourte(serie[serie.length-1].t, periode > 1) + \"</text>\";",
-            "    hote.innerHTML = \"<svg viewBox=\\\"0 0 \" + W + \" \" + H + \"\\\" preserveAspectRatio=\\\"none\\\" class=courbe>\" + grilles + ligneSeuil + \"<path d=\\\"\" + chemin + \"\\\" class=ligne />\" + pointsKo + etiquettes + tempsD + tempsF + \"</svg>\";",
+            "    var ligneSeuil = \"<line x1=\" + mgg + \" y1=\" + ySeuil.toFixed(1) + \" x2=\" + (W - mgd) + \" y2=\" + ySeuil.toFixed(1) + \" class=seuil-l />\";",
+            "    var tempsD = \"<text x=\" + mgg + \" y=\" + (H - 4) + \" class=axe>\" + heureCourte(serie[0].t, periode > 1) + \"</text>\";",
+            "    var tempsF = \"<text x=\" + (W - mgd) + \" y=\" + (H - 4) + \" class=axe text-anchor=end>\" + heureCourte(serie[serie.length-1].t, periode > 1) + \"</text>\";",
+            "    hote.innerHTML = \"<svg viewBox=\" + G + \"0 0 \" + W + \" \" + H + G + \" preserveAspectRatio=\" + G + \"none\" + G + \" class=courbe>\" + grilles + ligneSeuil + \"<path d=\" + G + chemin + G + \" class=ligne />\" + pointsKo + etiquettes + tempsD + tempsF + \"</svg>\";",
             "    var maxB = 120;",
             "    var pas = Math.max(1, Math.ceil(serie.length / maxB));",
             "    var groupes = [];",
@@ -243,7 +245,7 @@ jobs:
             "      groupes.push({ ko: ko, t: tranche[0].t, n: tranche.length });",
             "    }",
             "    barres.innerHTML = groupes.map(function(g){",
-            "    "      return \"<span class=\\\"b \" + (g.ko ? \"b-ko\" : \"b-ok\") + \"\\\" title=\\\"\" + fh(g.t) + (g.ko ? \" — \" + g.ko + \" echec(s)\" : \" — ok\") + \"\\\"></span>\";",  
+            "      return \"<span class=\" + G + \"b \" + (g.ko ? \"b-ko\" : \"b-ok\") + G + \" title=\" + G + fh(g.t) + (g.ko ? \" — \" + g.ko + \" echec(s)\" : \" — ok\") + G + \"></span>\";",
             "    }).join(\"\");",
             "  });",
             "}",
