@@ -43,11 +43,36 @@ jobs:
         run: |
           gh issue list --label monitoring --state all --limit 2 --json title,body,url,state,createdAt,closedAt > dernier_incident.json || echo "[]" > dernier_incident.json
 
+      - name: Archiver la mesure et mettre a jour l historique
+        if: always()
+        run: |
+          node -e '
+          const fs = require("fs");
+          let d = null;
+          try { d = JSON.parse(fs.readFileSync("artifacts/summary.json")); } catch(e) { process.exit(0); }
+          const pts = d.results.map(function(r){
+            return { n: r.name, ok: r.ok ? 1 : 0, ms: r.loadTimeMs || null };
+          });
+          const mesure = { t: d.date, p: pts };
+          fs.mkdirSync("archive", { recursive: true });
+          const mois = d.date.slice(0, 7);
+          fs.appendFileSync("archive/" + mois + ".jsonl", JSON.stringify(mesure) + "\n");
+          let hist = [];
+          try { hist = JSON.parse(fs.readFileSync("history.json")); } catch(e) {}
+          if (!Array.isArray(hist)) { hist = []; }
+          hist.push(mesure);
+          const limite = Date.now() - 7 * 24 * 3600 * 1000;
+          hist = hist.filter(function(m){ return new Date(m.t).getTime() >= limite; });
+          fs.writeFileSync("history.json", JSON.stringify(hist));
+          console.log("Historique : " + hist.length + " mesures sur 7 jours ; archive " + mois);
+          '
+
       - name: Generer le rapport et la page de statut
         if: always()
         env:
           CRON_STATUS_URL: https://mjqtyp8y.status.cron-job.org/
           REPO_ACTIONS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/monitor.yml
+          REPO_ARCHIVE_URL: ${{ github.server_url }}/${{ github.repository }}/tree/main/archive
         run: |
           node -e '
           const fs = require("fs");
@@ -60,6 +85,9 @@ jobs:
           }
           let seuilMs = 15000;
           try { seuilMs = require("./monitor/pages.config.js").maxLoadTimeMs || 15000; } catch(e) {}
+          let hist = [];
+          try { hist = JSON.parse(fs.readFileSync("history.json")); } catch(e) {}
+          if (!Array.isArray(hist)) { hist = []; }
           const fdate = (iso) => new Date(iso).toLocaleString("fr-BE", { timeZone: "Europe/Brussels" });
           const date = fdate(d.date);
           const detail = (r) => r.details[r.details.length-1].split("|").join("-");
@@ -100,11 +128,11 @@ jobs:
               }).join("");
             }
           } catch(e) {}
-          const carte = (r) => {
+          const carte = (r, idx) => {
             const secondes = r.loadTimeMs ? (r.loadTimeMs / 1000).toFixed(1) : null;
             const pct = r.loadTimeMs ? Math.min(100, Math.round((r.loadTimeMs / seuilMs) * 100)) : 0;
             const raison = r.ok ? "" : `<p class="raison">${echapper(detail(r))}</p>`;
-            return `<article class="carte ${r.ok ? "ok" : "ko"}">
+            return `<article class="carte ${r.ok ? "ok" : "ko"}" data-page="${echapper(r.name)}">
               <div class="carte-tete">
                 <span class="marque">${r.ok ? "&#10003;" : "&#10005;"}</span>
                 <h3>${r.name}</h3>
@@ -118,12 +146,25 @@ jobs:
               <div class="piste"><span style="width:${pct}%"></span></div>
               <p class="seuil">seuil ${(seuilMs / 1000).toFixed(0)} s</p>
               ${raison}
+              <div class="graph" id="graph-${idx}">
+                <div class="graph-tete">
+                  <span class="dispo" id="dispo-${idx}">&nbsp;</span>
+                  <span class="periode-info" id="pinfo-${idx}"></span>
+                </div>
+                <div class="svg-hote" id="svg-${idx}"></div>
+                <div class="barres" id="barres-${idx}"></div>
+              </div>
             </article>`;
           };
           const cronUrl = process.env.CRON_STATUS_URL || "https://cron-job.org";
           const actionsUrl = process.env.REPO_ACTIONS_URL || "https://github.com";
+          const archiveUrl = process.env.REPO_ARCHIVE_URL || "https://github.com";
+          const noms = d.results.map(function(r){ return r.name; });
           const scriptClient = [
             "<script>",
+            "var HIST = " + JSON.stringify(hist) + ";",
+            "var NOMS = " + JSON.stringify(noms) + ";",
+            "var SEUIL = " + seuilMs + ";",
             "var genere = \"" + d.date + "\";",
             "var diff = Math.round((Date.now() - new Date(genere).getTime()) / 60000);",
             "if (diff > 45) {",
@@ -134,6 +175,87 @@ jobs:
             "  if (!iso) return null;",
             "  return new Date(iso).toLocaleString(\"fr-BE\", { timeZone: \"Europe/Brussels\", day: \"2-digit\", month: \"2-digit\", year: \"numeric\", hour: \"2-digit\", minute: \"2-digit\" });",
             "}",
+            "function heureCourte(iso, jours) {",
+            "  var o = jours ? { timeZone: \"Europe/Brussels\", day: \"2-digit\", month: \"2-digit\" } : { timeZone: \"Europe/Brussels\", hour: \"2-digit\", minute: \"2-digit\" };",
+            "  return new Date(iso).toLocaleString(\"fr-BE\", o);",
+            "}",
+            "var periode = 1;",
+            "function dessiner() {",
+            "  var limite = Date.now() - periode * 24 * 3600 * 1000;",
+            "  var pts = HIST.filter(function(m){ return new Date(m.t).getTime() >= limite; });",
+            "  NOMS.forEach(function(nom, idx) {",
+            "    var serie = [];",
+            "    pts.forEach(function(m){",
+            "      var p = (m.p || []).filter(function(x){ return x.n === nom; })[0];",
+            "      if (p) { serie.push({ t: m.t, ok: p.ok, ms: p.ms }); }",
+            "    });",
+            "    var hote = document.getElementById(\"svg-\" + idx);",
+            "    var barres = document.getElementById(\"barres-\" + idx);",
+            "    var dispo = document.getElementById(\"dispo-\" + idx);",
+            "    var pinfo = document.getElementById(\"pinfo-\" + idx);",
+            "    if (!hote) return;",
+            "    if (serie.length < 2) {",
+            "      hote.innerHTML = \"<p class=vide-graph>Pas encore assez de mesures sur cette periode. L historique se construit a chaque verification.</p>\";",
+            "      barres.innerHTML = \"\"; dispo.innerHTML = \"&nbsp;\"; pinfo.textContent = \"\";",
+            "      return;",
+            "    }",
+            "    var nbOk = serie.filter(function(s){ return s.ok === 1; }).length;",
+            "    var taux = (nbOk / serie.length) * 100;",
+            "    var classeT = taux >= 99 ? \"ok\" : (taux >= 95 ? \"moyen\" : \"ko\");",
+            "    dispo.className = \"dispo \" + classeT;",
+            "    dispo.innerHTML = taux.toFixed(1).replace(\".0\", \"\") + \" % de disponibilite\";",
+            "    pinfo.textContent = serie.length + \" verifications \" + (periode === 1 ? \"sur 24 h\" : \"sur 7 jours\");",
+            "    var W = 640, H = 150, mg = { g: 34, d: 8, h: 12, b: 18 };",
+            "    var iw = W - mg.g - mg.d, ih = H - mg.h - mg.b;",
+            "    var vals = serie.filter(function(s){ return s.ms; }).map(function(s){ return s.ms; });",
+            "    var maxV = Math.max(SEUIL, vals.length ? Math.max.apply(null, vals) : SEUIL);",
+            "    maxV = Math.ceil(maxV / 5000) * 5000;",
+            "    var t0 = new Date(serie[0].t).getTime();",
+            "    var t1 = new Date(serie[serie.length-1].t).getTime();",
+            "    var etendue = Math.max(1, t1 - t0);",
+            "    var X = function(t){ return mg.g + ((new Date(t).getTime() - t0) / etendue) * iw; };",
+            "    var Y = function(ms){ return mg.h + ih - (ms / maxV) * ih; };",
+            "    var chemin = \"\", ouvert = false;",
+            "    serie.forEach(function(s){",
+            "      if (s.ms) { chemin += (ouvert ? \" L \" : \" M \") + X(s.t).toFixed(1) + \" \" + Y(s.ms).toFixed(1); ouvert = true; }",
+            "      else { ouvert = false; }",
+            "    });",
+            "    var pointsKo = serie.filter(function(s){ return s.ok === 0 && s.ms; }).map(function(s){",
+            "      return \"<circle cx=\" + X(s.t).toFixed(1) + \" cy=\" + Y(s.ms).toFixed(1) + \" r=3 class=pt-ko><title>\" + fh(s.t) + \"</title></circle>\";",
+            "    }).join(\"\");",
+            "    var grilles = \"\", etiquettes = \"\";",
+            "    [0, 0.5, 1].forEach(function(f){",
+            "      var v = maxV * f, y = Y(v);",
+            "      grilles += \"<line x1=\" + mg.g + \" y1=\" + y.toFixed(1) + \" x2=\" + (W - mg.d) + \" y2=\" + y.toFixed(1) + \" class=grille />\";",
+            "      etiquettes += \"<text x=\" + (mg.g - 6) + \" y=\" + (y + 3).toFixed(1) + \" class=axe text-anchor=end>\" + (v / 1000).toFixed(0) + \"s</text>\";",
+            "    });",
+            "    var ySeuil = Y(SEUIL);",
+            "    var ligneSeuil = \"<line x1=\" + mg.g + \" y1=\" + ySeuil.toFixed(1) + \" x2=\" + (W - mg.d) + \" y2=\" + ySeuil.toFixed(1) + \" class=seuil-l />\";",
+            "    var tempsD = \"<text x=\" + mg.g + \" y=\" + (H - 4) + \" class=axe>\" + heureCourte(serie[0].t, periode > 1) + \"</text>\";",
+            "    var tempsF = \"<text x=\" + (W - mg.d) + \" y=\" + (H - 4) + \" class=axe text-anchor=end>\" + heureCourte(serie[serie.length-1].t, periode > 1) + \"</text>\";",
+            "    hote.innerHTML = \"<svg viewBox='0 0 \" + W + \" \" + H + \"' preserveAspectRatio='none' class=courbe>\" + grilles + ligneSeuil + \"<path d='\" + chemin + \"' class=ligne />\" + pointsKo + etiquettes + tempsD + tempsF + \"</svg>\";",
+            "    var maxB = 120;",
+            "    var pas = Math.max(1, Math.ceil(serie.length / maxB));",
+            "    var groupes = [];",
+            "    for (var i = 0; i < serie.length; i += pas) {",
+            "      var tranche = serie.slice(i, i + pas);",
+            "      var ko = tranche.filter(function(s){ return s.ok === 0; }).length;",
+            "      groupes.push({ ko: ko, t: tranche[0].t, n: tranche.length });",
+            "    }",
+            "    barres.innerHTML = groupes.map(function(g){",
+            "      return \"<span class='b \" + (g.ko ? \"b-ko\" : \"b-ok\") + \"' title='\" + fh(g.t) + (g.ko ? \" — \" + g.ko + \" echec(s)\" : \" — ok\") + \"'></span>\";",
+            "    }).join(\"\");",
+            "  });",
+            "}",
+            "document.querySelectorAll(\".btn-periode\").forEach(function(b){",
+            "  b.addEventListener(\"click\", function(){",
+            "    document.querySelectorAll(\".btn-periode\").forEach(function(x){ x.classList.remove(\"actif\"); });",
+            "    b.classList.add(\"actif\");",
+            "    periode = parseInt(b.getAttribute(\"data-j\"), 10);",
+            "    dessiner();",
+            "  });",
+            "});",
+            "dessiner();",
             "var resume = { Actions: null, Pages: null };",
             "function majResume() {",
             "  var el = document.getElementById(\"infra-resume\");",
@@ -151,9 +273,9 @@ jobs:
             "fetch(\"https://www.githubstatus.com/api/v2/components.json\")",
             "  .then(function(r){ return r.json(); })",
             "  .then(function(data){",
-            "    var noms = { \"Actions\": \"gh-actions\", \"Pages\": \"gh-pages\" };",
+            "    var m = { \"Actions\": \"gh-actions\", \"Pages\": \"gh-pages\" };",
             "    data.components.forEach(function(c){",
-            "      var id = noms[c.name];",
+            "      var id = m[c.name];",
             "      if (!id) return;",
             "      var ok = c.status === \"operational\";",
             "      resume[c.name] = ok;",
@@ -212,9 +334,14 @@ jobs:
               background:rgba(242,181,68,.1); border:1px solid rgba(242,181,68,.35); color:#f6d79a; font-size:.9rem; }
             .bloc-surveille { background:var(--panneau2); border:1px solid var(--bord);
               border-radius:20px; padding:22px; }
-            .bloc-tete { display:flex; align-items:baseline; gap:10px; margin:0 2px 16px; }
+            .bloc-tete { display:flex; align-items:center; gap:10px; margin:0 2px 16px; flex-wrap:wrap; }
             .bloc-tete h2 { margin:0; font-size:1rem; font-weight:600; letter-spacing:-.01em; }
-            .bloc-tete span { font-size:.74rem; color:var(--doux); }
+            .bloc-tete .st { font-size:.74rem; color:var(--doux); flex:1; }
+            .switch { display:flex; gap:4px; background:#0f151c; border:1px solid var(--bord);
+              border-radius:99px; padding:3px; }
+            .btn-periode { border:none; background:none; color:var(--doux); cursor:pointer;
+              font-family:inherit; font-size:.74rem; font-weight:600; padding:5px 12px; border-radius:99px; }
+            .btn-periode.actif { background:var(--bord); color:var(--texte); }
             .sous-titre { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
               color:var(--doux); margin:26px 2px 12px; font-weight:600; }
             .carte { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
@@ -246,6 +373,25 @@ jobs:
               font-family:"JetBrains Mono", ui-monospace, monospace; }
             .raison { margin:14px 0 0; padding:10px 12px; border-radius:10px; font-size:.82rem;
               background:rgba(255,98,89,.08); color:#ffb3ae; word-break:break-word; }
+            .graph { margin-top:18px; padding-top:16px; border-top:1px solid var(--bord); }
+            .graph-tete { display:flex; align-items:baseline; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+            .dispo { font-size:.82rem; font-weight:700; font-family:"JetBrains Mono", ui-monospace, monospace; }
+            .dispo.ok { color:var(--vert); } .dispo.moyen { color:var(--ambre); } .dispo.ko { color:var(--rouge); }
+            .periode-info { font-size:.72rem; color:var(--tres-doux); flex:1; text-align:right; }
+            .svg-hote { width:100%; }
+            .courbe { width:100%; height:150px; display:block; overflow:visible; }
+            .courbe .grille { stroke:#1c242e; stroke-width:1; }
+            .courbe .seuil-l { stroke:#4a3a20; stroke-width:1; stroke-dasharray:4 4; }
+            .courbe .ligne { fill:none; stroke:var(--vert); stroke-width:1.6;
+              stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+            .courbe .pt-ko { fill:var(--rouge); }
+            .courbe .axe { fill:var(--tres-doux); font-size:9px;
+              font-family:"JetBrains Mono", ui-monospace, monospace; }
+            .barres { display:flex; gap:2px; margin-top:10px; height:16px; align-items:stretch; }
+            .barres .b { flex:1; border-radius:2px; min-width:2px; }
+            .barres .b-ok { background:rgba(55,217,154,.55); }
+            .barres .b-ko { background:var(--rouge); }
+            .vide-graph { margin:14px 0; font-size:.8rem; color:var(--tres-doux); text-align:center; }
             .incident { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
               padding:16px 18px; margin-bottom:12px; }
             .incident:last-child { margin-bottom:0; }
@@ -298,13 +444,14 @@ jobs:
             .timeline .quoi { margin:0; font-size:.78rem; color:var(--tres-doux); }
             .timeline a, .infra-liste a { color:#6f8ac4; }
             .bouton { display:inline-block; font-size:.78rem; color:#6f8ac4; text-decoration:none;
-              border:1px solid var(--bord); border-radius:99px; padding:7px 16px; }
+              border:1px solid var(--bord); border-radius:99px; padding:7px 16px; margin-right:8px; }
             .bouton:hover { border-color:#6f8ac4; color:#9ab2e8; }
             .vide { font-size:.82rem; color:var(--doux); margin:0; }
             footer { margin-top:28px; font-size:.72rem; color:var(--tres-doux); line-height:1.7; }
             @media (max-width:520px) {
               h1 { font-size:1.6rem; } .chiffre { font-size:1.9rem; }
               .bloc-surveille { padding:16px; border-radius:16px; }
+              .carte { padding:16px; }
             }
           </style></head><body>
           <div class="wrap">
@@ -316,7 +463,11 @@ jobs:
             <div id="banniere-retard" class="banniere">Cette page date de <span id="retard-min"></span> minutes. Le monitoring semble retarde : depliez Infrastructure du monitoring en bas de page.</div>
             <section class="bloc-surveille">
               <div class="bloc-tete">
-                <h2>Pages surveillees</h2><span>site Ladbrokes.be</span>
+                <h2>Pages surveillees</h2><span class="st">site Ladbrokes.be</span>
+                <div class="switch">
+                  <button class="btn-periode actif" data-j="1">24 h</button>
+                  <button class="btn-periode" data-j="7">7 jours</button>
+                </div>
               </div>
               ${d.results.map(carte).join("")}
               <p class="sous-titre">Derniers incidents detectes sur ces pages</p>
@@ -345,12 +496,13 @@ jobs:
                   </div>
                   <p class="titre-frise">Incidents GitHub recents sur ces services</p>
                   <div id="gh-incidents" class="timeline"><p class="vide">chargement...</p></div>
-                  <p class="titre-frise">Executions</p>
+                  <p class="titre-frise">Executions et donnees</p>
                   <a class="bouton" href="${actionsUrl}">Historique complet des executions</a>
+                  <a class="bouton" href="${archiveUrl}">Archives des mesures</a>
                 </div>
               </div>
             </details>
-            <footer>Page regeneree a chaque verification. Toutes les heures sont en heure belge (Europe/Brussels). Etat des services GitHub interroge en direct par votre navigateur.</footer>
+            <footer>Page regeneree a chaque verification. Graphiques bases sur les 7 derniers jours ; toutes les mesures sont archivees par mois sans limite de duree. Toutes les heures sont en heure belge (Europe/Brussels).</footer>
           </div>
           ${scriptClient}
           </body></html>`;
@@ -363,7 +515,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase || true
-          git add STATUS.md index.html 2>/dev/null || git add STATUS.md
+          git add STATUS.md index.html history.json archive 2>/dev/null || git add STATUS.md
           git diff --cached --quiet || git commit -m "Mise a jour du statut"
           git push || true
 
