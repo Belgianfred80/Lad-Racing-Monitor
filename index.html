@@ -27,9 +27,14 @@
     background:rgba(242,181,68,.1); border:1px solid rgba(242,181,68,.35); color:#f6d79a; font-size:.9rem; }
   .bloc-surveille { background:var(--panneau2); border:1px solid var(--bord);
     border-radius:20px; padding:22px; }
-  .bloc-tete { display:flex; align-items:baseline; gap:10px; margin:0 2px 16px; }
+  .bloc-tete { display:flex; align-items:center; gap:10px; margin:0 2px 16px; flex-wrap:wrap; }
   .bloc-tete h2 { margin:0; font-size:1rem; font-weight:600; letter-spacing:-.01em; }
-  .bloc-tete span { font-size:.74rem; color:var(--doux); }
+  .bloc-tete .st { font-size:.74rem; color:var(--doux); flex:1; }
+  .switch { display:flex; gap:4px; background:#0f151c; border:1px solid var(--bord);
+    border-radius:99px; padding:3px; }
+  .btn-periode { border:none; background:none; color:var(--doux); cursor:pointer;
+    font-family:inherit; font-size:.74rem; font-weight:600; padding:5px 12px; border-radius:99px; }
+  .btn-periode.actif { background:var(--bord); color:var(--texte); }
   .sous-titre { font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
     color:var(--doux); margin:26px 2px 12px; font-weight:600; }
   .carte { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
@@ -61,6 +66,25 @@
     font-family:"JetBrains Mono", ui-monospace, monospace; }
   .raison { margin:14px 0 0; padding:10px 12px; border-radius:10px; font-size:.82rem;
     background:rgba(255,98,89,.08); color:#ffb3ae; word-break:break-word; }
+  .graph { margin-top:18px; padding-top:16px; border-top:1px solid var(--bord); }
+  .graph-tete { display:flex; align-items:baseline; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .dispo { font-size:.82rem; font-weight:700; font-family:"JetBrains Mono", ui-monospace, monospace; }
+  .dispo.ok { color:var(--vert); } .dispo.moyen { color:var(--ambre); } .dispo.ko { color:var(--rouge); }
+  .periode-info { font-size:.72rem; color:var(--tres-doux); flex:1; text-align:right; }
+  .svg-hote { width:100%; }
+  .courbe { width:100%; height:150px; display:block; overflow:visible; }
+  .courbe .grille { stroke:#1c242e; stroke-width:1; }
+  .courbe .seuil-l { stroke:#4a3a20; stroke-width:1; stroke-dasharray:4 4; }
+  .courbe .ligne { fill:none; stroke:var(--vert); stroke-width:1.6;
+    stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+  .courbe .pt-ko { fill:var(--rouge); }
+  .courbe .axe { fill:var(--tres-doux); font-size:9px;
+    font-family:"JetBrains Mono", ui-monospace, monospace; }
+  .barres { display:flex; gap:2px; margin-top:10px; height:16px; align-items:stretch; }
+  .barres .b { flex:1; border-radius:2px; min-width:2px; }
+  .barres .b-ok { background:rgba(55,217,154,.55); }
+  .barres .b-ko { background:var(--rouge); }
+  .vide-graph { margin:14px 0; font-size:.8rem; color:var(--tres-doux); text-align:center; }
   .incident { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
     padding:16px 18px; margin-bottom:12px; }
   .incident:last-child { margin-bottom:0; }
@@ -113,25 +137,30 @@
   .timeline .quoi { margin:0; font-size:.78rem; color:var(--tres-doux); }
   .timeline a, .infra-liste a { color:#6f8ac4; }
   .bouton { display:inline-block; font-size:.78rem; color:#6f8ac4; text-decoration:none;
-    border:1px solid var(--bord); border-radius:99px; padding:7px 16px; }
+    border:1px solid var(--bord); border-radius:99px; padding:7px 16px; margin-right:8px; }
   .bouton:hover { border-color:#6f8ac4; color:#9ab2e8; }
   .vide { font-size:.82rem; color:var(--doux); margin:0; }
   footer { margin-top:28px; font-size:.72rem; color:var(--tres-doux); line-height:1.7; }
   @media (max-width:520px) {
     h1 { font-size:1.6rem; } .chiffre { font-size:1.9rem; }
     .bloc-surveille { padding:16px; border-radius:16px; }
+    .carte { padding:16px; }
   }
 </style></head><body>
 <div class="wrap">
   <header class="tete">
     <p class="eyebrow">Surveillance des pages de courses</p>
     <h1>Ladbrokes.be</h1>
-    <p class="horodatage"><span class="pulse"></span>Derniere verification 01/08/2026 11:25:25</p>
+    <p class="horodatage"><span class="pulse"></span>Derniere verification 01/08/2026 11:41:42</p>
   </header>
   <div id="banniere-retard" class="banniere">Cette page date de <span id="retard-min"></span> minutes. Le monitoring semble retarde : depliez Infrastructure du monitoring en bas de page.</div>
   <section class="bloc-surveille">
     <div class="bloc-tete">
-      <h2>Pages surveillees</h2><span>site Ladbrokes.be</span>
+      <h2>Pages surveillees</h2><span class="st">site Ladbrokes.be</span>
+      <div class="switch">
+        <button class="btn-periode actif" data-j="1">24 h</button>
+        <button class="btn-periode" data-j="7">7 jours</button>
+      </div>
     </div>
     <article class="carte ok">
     <div class="carte-tete">
@@ -141,12 +170,20 @@
     </div>
     <a class="url" href="https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing">https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing</a>
     <div class="mesure">
-      <span class="chiffre">4.4</span><span class="unite">s</span>
+      <span class="chiffre">4.9</span><span class="unite">s</span>
       <span class="libelle">temps de chargement</span>
     </div>
-    <div class="piste"><span style="width:29%"></span></div>
+    <div class="piste"><span style="width:32%"></span></div>
     <p class="seuil">seuil 15 s</p>
     
+    <div class="graph">
+      <div class="graph-tete">
+        <span class="dispo" id="dispo-0">&nbsp;</span>
+        <span class="periode-info" id="pinfo-0"></span>
+      </div>
+      <div class="svg-hote" id="svg-0"></div>
+      <div class="barres" id="barres-0"></div>
+    </div>
   </article><article class="carte ok">
     <div class="carte-tete">
       <span class="marque">&#10003;</span>
@@ -155,12 +192,20 @@
     </div>
     <a class="url" href="https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing">https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing</a>
     <div class="mesure">
-      <span class="chiffre">4.0</span><span class="unite">s</span>
+      <span class="chiffre">4.7</span><span class="unite">s</span>
       <span class="libelle">temps de chargement</span>
     </div>
-    <div class="piste"><span style="width:27%"></span></div>
+    <div class="piste"><span style="width:31%"></span></div>
     <p class="seuil">seuil 15 s</p>
     
+    <div class="graph">
+      <div class="graph-tete">
+        <span class="dispo" id="dispo-1">&nbsp;</span>
+        <span class="periode-info" id="pinfo-1"></span>
+      </div>
+      <div class="svg-hote" id="svg-1"></div>
+      <div class="barres" id="barres-1"></div>
+    </div>
   </article>
     <p class="sous-titre">Derniers incidents detectes sur ces pages</p>
     <article class="incident ok">
@@ -202,15 +247,20 @@
         </div>
         <p class="titre-frise">Incidents GitHub recents sur ces services</p>
         <div id="gh-incidents" class="timeline"><p class="vide">chargement...</p></div>
-        <p class="titre-frise">Executions</p>
+        <p class="titre-frise">Executions et donnees</p>
         <a class="bouton" href="https://github.com/Belgianfred80/Lad-Racing-Monitor/actions/workflows/monitor.yml">Historique complet des executions</a>
+        <a class="bouton" href="https://github.com/Belgianfred80/Lad-Racing-Monitor/tree/main/archive">Archives des mesures</a>
       </div>
     </div>
   </details>
-  <footer>Page regeneree a chaque verification. Toutes les heures sont en heure belge (Europe/Brussels). Etat des services GitHub interroge en direct par votre navigateur.</footer>
+  <footer>Page regeneree a chaque verification. Graphiques bases sur les 7 derniers jours ; toutes les mesures sont archivees par mois sans limite de duree. Toutes les heures sont en heure belge (Europe/Brussels).</footer>
 </div>
 <script>
-var genere = "2026-08-01T09:25:25.476Z";
+var HIST = [{"t":"2026-08-01T09:28:30.539Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4147},{"n":"Courses de lévriers","ok":1,"ms":3902}]},{"t":"2026-08-01T09:34:34.096Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":3972},{"n":"Courses de lévriers","ok":1,"ms":5529}]},{"t":"2026-08-01T09:37:23.033Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4516},{"n":"Courses de lévriers","ok":1,"ms":5214}]},{"t":"2026-08-01T09:41:42.296Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4867},{"n":"Courses de lévriers","ok":1,"ms":4666}]}];
+var NOMS = ["Courses hippiques (PMU)","Courses de lévriers"];
+var SEUIL = 15000;
+var G = String.fromCharCode(34);
+var genere = "2026-08-01T09:41:42.296Z";
 var diff = Math.round((Date.now() - new Date(genere).getTime()) / 60000);
 if (diff > 45) {
   document.getElementById("banniere-retard").style.display = "block";
@@ -220,6 +270,87 @@ function fh(iso) {
   if (!iso) return null;
   return new Date(iso).toLocaleString("fr-BE", { timeZone: "Europe/Brussels", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
+function heureCourte(iso, jours) {
+  var o = jours ? { timeZone: "Europe/Brussels", day: "2-digit", month: "2-digit" } : { timeZone: "Europe/Brussels", hour: "2-digit", minute: "2-digit" };
+  return new Date(iso).toLocaleString("fr-BE", o);
+}
+var periode = 1;
+function dessiner() {
+  var limite = Date.now() - periode * 24 * 3600 * 1000;
+  var pts = HIST.filter(function(m){ return new Date(m.t).getTime() >= limite; });
+  NOMS.forEach(function(nom, idx) {
+    var serie = [];
+    pts.forEach(function(m){
+      var p = (m.p || []).filter(function(x){ return x.n === nom; })[0];
+      if (p) { serie.push({ t: m.t, ok: p.ok, ms: p.ms }); }
+    });
+    var hote = document.getElementById("svg-" + idx);
+    var barres = document.getElementById("barres-" + idx);
+    var dispo = document.getElementById("dispo-" + idx);
+    var pinfo = document.getElementById("pinfo-" + idx);
+    if (!hote) return;
+    if (serie.length < 2) {
+      hote.innerHTML = "<p class=vide-graph>Pas encore assez de mesures sur cette periode. L historique se construit a chaque verification.</p>";
+      barres.innerHTML = ""; dispo.innerHTML = "&nbsp;"; pinfo.textContent = "";
+      return;
+    }
+    var nbOk = serie.filter(function(s){ return s.ok === 1; }).length;
+    var taux = (nbOk / serie.length) * 100;
+    var classeT = taux >= 99 ? "ok" : (taux >= 95 ? "moyen" : "ko");
+    dispo.className = "dispo " + classeT;
+    dispo.innerHTML = taux.toFixed(1).replace(".0", "") + " % de disponibilite";
+    pinfo.textContent = serie.length + " verifications " + (periode === 1 ? "sur 24 h" : "sur 7 jours");
+    var W = 640, H = 150, mgg = 34, mgd = 8, mgh = 12, mgb = 18;
+    var iw = W - mgg - mgd, ih = H - mgh - mgb;
+    var vals = serie.filter(function(s){ return s.ms; }).map(function(s){ return s.ms; });
+    var maxV = Math.max(SEUIL, vals.length ? Math.max.apply(null, vals) : SEUIL);
+    maxV = Math.ceil(maxV / 5000) * 5000;
+    var t0 = new Date(serie[0].t).getTime();
+    var t1 = new Date(serie[serie.length-1].t).getTime();
+    var etendue = Math.max(1, t1 - t0);
+    var X = function(t){ return mgg + ((new Date(t).getTime() - t0) / etendue) * iw; };
+    var Y = function(ms){ return mgh + ih - (ms / maxV) * ih; };
+    var chemin = "", ouvert = false;
+    serie.forEach(function(s){
+      if (s.ms) { chemin += (ouvert ? " L " : " M ") + X(s.t).toFixed(1) + " " + Y(s.ms).toFixed(1); ouvert = true; }
+      else { ouvert = false; }
+    });
+    var pointsKo = serie.filter(function(s){ return s.ok === 0 && s.ms; }).map(function(s){
+      return "<circle cx=" + X(s.t).toFixed(1) + " cy=" + Y(s.ms).toFixed(1) + " r=3 class=pt-ko><title>" + fh(s.t) + "</title></circle>";
+    }).join("");
+    var grilles = "", etiquettes = "";
+    [0, 0.5, 1].forEach(function(f){
+      var v = maxV * f, y = Y(v);
+      grilles += "<line x1=" + mgg + " y1=" + y.toFixed(1) + " x2=" + (W - mgd) + " y2=" + y.toFixed(1) + " class=grille />";
+      etiquettes += "<text x=" + (mgg - 6) + " y=" + (y + 3).toFixed(1) + " class=axe text-anchor=end>" + (v / 1000).toFixed(0) + "s</text>";
+    });
+    var ySeuil = Y(SEUIL);
+    var ligneSeuil = "<line x1=" + mgg + " y1=" + ySeuil.toFixed(1) + " x2=" + (W - mgd) + " y2=" + ySeuil.toFixed(1) + " class=seuil-l />";
+    var tempsD = "<text x=" + mgg + " y=" + (H - 4) + " class=axe>" + heureCourte(serie[0].t, periode > 1) + "</text>";
+    var tempsF = "<text x=" + (W - mgd) + " y=" + (H - 4) + " class=axe text-anchor=end>" + heureCourte(serie[serie.length-1].t, periode > 1) + "</text>";
+    hote.innerHTML = "<svg viewBox=" + G + "0 0 " + W + " " + H + G + " preserveAspectRatio=" + G + "none" + G + " class=courbe>" + grilles + ligneSeuil + "<path d=" + G + chemin + G + " class=ligne />" + pointsKo + etiquettes + tempsD + tempsF + "</svg>";
+    var maxB = 120;
+    var pas = Math.max(1, Math.ceil(serie.length / maxB));
+    var groupes = [];
+    for (var i = 0; i < serie.length; i += pas) {
+      var tranche = serie.slice(i, i + pas);
+      var ko = tranche.filter(function(s){ return s.ok === 0; }).length;
+      groupes.push({ ko: ko, t: tranche[0].t, n: tranche.length });
+    }
+    barres.innerHTML = groupes.map(function(g){
+      return "<span class=" + G + "b " + (g.ko ? "b-ko" : "b-ok") + G + " title=" + G + fh(g.t) + (g.ko ? " — " + g.ko + " echec(s)" : " — ok") + G + "></span>";
+    }).join("");
+  });
+}
+document.querySelectorAll(".btn-periode").forEach(function(b){
+  b.addEventListener("click", function(){
+    document.querySelectorAll(".btn-periode").forEach(function(x){ x.classList.remove("actif"); });
+    b.classList.add("actif");
+    periode = parseInt(b.getAttribute("data-j"), 10);
+    dessiner();
+  });
+});
+dessiner();
 var resume = { Actions: null, Pages: null };
 function majResume() {
   var el = document.getElementById("infra-resume");
@@ -237,9 +368,9 @@ function majResume() {
 fetch("https://www.githubstatus.com/api/v2/components.json")
   .then(function(r){ return r.json(); })
   .then(function(data){
-    var noms = { "Actions": "gh-actions", "Pages": "gh-pages" };
+    var m = { "Actions": "gh-actions", "Pages": "gh-pages" };
     data.components.forEach(function(c){
-      var id = noms[c.name];
+      var id = m[c.name];
       if (!id) return;
       var ok = c.status === "operational";
       resume[c.name] = ok;
