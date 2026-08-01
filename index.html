@@ -45,7 +45,7 @@
   .marque { width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
     font-size:.72rem; font-weight:700; background:rgba(55,217,154,.16); color:var(--vert); }
   .carte.ko .marque { background:rgba(255,98,89,.16); color:var(--rouge); }
-  .carte h3 { margin:0; font-size:1.05rem; font-weight:600; flex:1; }
+  .carte h3 { margin:0; font-size:1.05rem; font-weight:600; flex:1; color:var(--texte); }
   .pill { font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; font-weight:700;
     padding:4px 10px; border-radius:99px; white-space:nowrap; }
   .pill-ok { background:rgba(55,217,154,.14); color:var(--vert); }
@@ -82,8 +82,9 @@
     font-family:"JetBrains Mono", ui-monospace, monospace; }
   .barres { display:flex; gap:2px; margin-top:10px; height:16px; align-items:stretch; }
   .barres .b { flex:1; border-radius:2px; min-width:2px; }
-  .barres .b-ok { background:rgba(55,217,154,.55); }
-  .barres .b-ko { background:var(--rouge); }
+  .barres .b-ok { background:rgba(55,217,154,.3); }
+  .barres .b-ko { background:rgba(255,98,89,.75); }
+  .legende-barres { margin:6px 0 0; font-size:.68rem; color:var(--tres-doux); }
   .vide-graph { margin:14px 0; font-size:.8rem; color:var(--tres-doux); text-align:center; }
   .incident { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
     padding:16px 18px; margin-bottom:12px; }
@@ -151,12 +152,12 @@
   <header class="tete">
     <p class="eyebrow">Surveillance des pages de courses</p>
     <h1>Ladbrokes.be</h1>
-    <p class="horodatage"><span class="pulse"></span>Derniere verification 01/08/2026 11:49:17</p>
+    <p class="horodatage"><span class="pulse"></span>Derniere verification 01/08/2026 11:55:25</p>
   </header>
   <div id="banniere-retard" class="banniere">Cette page date de <span id="retard-min"></span> minutes. Le monitoring semble retarde : depliez Infrastructure du monitoring en bas de page.</div>
   <section class="bloc-surveille">
     <div class="bloc-tete">
-      <h2>Pages surveillees</h2><span class="st">site Ladbrokes.be</span>
+      <span class="st"></span>
       <div class="switch">
         <button class="btn-periode actif" data-j="1">24 h</button>
         <button class="btn-periode" data-j="7">7 jours</button>
@@ -170,10 +171,10 @@
     </div>
     <a class="url" href="https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing">https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing</a>
     <div class="mesure">
-      <span class="chiffre">3.8</span><span class="unite">s</span>
+      <span class="chiffre">4.2</span><span class="unite">s</span>
       <span class="libelle">temps de chargement</span>
     </div>
-    <div class="piste"><span style="width:26%"></span></div>
+    <div class="piste"><span style="width:28%"></span></div>
     <p class="seuil">seuil 15 s</p>
     
     <div class="graph">
@@ -183,6 +184,7 @@
       </div>
       <div class="svg-hote" id="svg-0"></div>
       <div class="barres" id="barres-0"></div>
+      <p class="legende-barres">une barre = une verification &middot; vert = reussie, rouge = echec</p>
     </div>
   </article><article class="carte ok">
     <div class="carte-tete">
@@ -192,10 +194,10 @@
     </div>
     <a class="url" href="https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing">https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing</a>
     <div class="mesure">
-      <span class="chiffre">2.6</span><span class="unite">s</span>
+      <span class="chiffre">4.7</span><span class="unite">s</span>
       <span class="libelle">temps de chargement</span>
     </div>
-    <div class="piste"><span style="width:17%"></span></div>
+    <div class="piste"><span style="width:31%"></span></div>
     <p class="seuil">seuil 15 s</p>
     
     <div class="graph">
@@ -205,6 +207,7 @@
       </div>
       <div class="svg-hote" id="svg-1"></div>
       <div class="barres" id="barres-1"></div>
+      <p class="legende-barres">une barre = une verification &middot; vert = reussie, rouge = echec</p>
     </div>
   </article>
     <p class="sous-titre">Derniers incidents detectes sur ces pages</p>
@@ -256,11 +259,11 @@
   <footer>Page regeneree a chaque verification. Graphiques bases sur les 7 derniers jours ; toutes les mesures sont archivees par mois sans limite de duree. Toutes les heures sont en heure belge (Europe/Brussels).</footer>
 </div>
 <script>
-var HIST = [{"t":"2026-08-01T09:28:30.539Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4147},{"n":"Courses de lévriers","ok":1,"ms":3902}]},{"t":"2026-08-01T09:34:34.096Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":3972},{"n":"Courses de lévriers","ok":1,"ms":5529}]},{"t":"2026-08-01T09:37:23.033Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4516},{"n":"Courses de lévriers","ok":1,"ms":5214}]},{"t":"2026-08-01T09:41:42.296Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4867},{"n":"Courses de lévriers","ok":1,"ms":4666}]},{"t":"2026-08-01T09:49:17.513Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":3829},{"n":"Courses de lévriers","ok":1,"ms":2562}]}];
+var HIST = [{"t":"2026-08-01T09:28:30.539Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4147},{"n":"Courses de lévriers","ok":1,"ms":3902}]},{"t":"2026-08-01T09:34:34.096Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":3972},{"n":"Courses de lévriers","ok":1,"ms":5529}]},{"t":"2026-08-01T09:37:23.033Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4516},{"n":"Courses de lévriers","ok":1,"ms":5214}]},{"t":"2026-08-01T09:41:42.296Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4867},{"n":"Courses de lévriers","ok":1,"ms":4666}]},{"t":"2026-08-01T09:49:17.513Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":3829},{"n":"Courses de lévriers","ok":1,"ms":2562}]},{"t":"2026-08-01T09:55:25.753Z","p":[{"n":"Courses hippiques (PMU)","ok":1,"ms":4160},{"n":"Courses de lévriers","ok":1,"ms":4695}]}];
 var NOMS = ["Courses hippiques (PMU)","Courses de lévriers"];
 var SEUIL = 15000;
 var G = String.fromCharCode(34);
-var genere = "2026-08-01T09:49:17.513Z";
+var genere = "2026-08-01T09:55:25.753Z";
 var diff = Math.round((Date.now() - new Date(genere).getTime()) / 60000);
 if (diff > 45) {
   document.getElementById("banniere-retard").style.display = "block";
