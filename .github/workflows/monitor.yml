@@ -513,7 +513,7 @@ jobs:
                 </div>
               </div>
             </details>
-            <footer>Page regeneree a chaque verification. Graphiques bases sur les 7 derniers jours ; toutes les mesures sont archivees par mois sans limite de duree. Toutes les heures sont en heure belge (Europe/Brussels).</footer>
+            <footer>Page regeneree a chaque verification. Graphiques bases sur les 7 derniers jours ; toutes les mesures sont archivees par mois sans limite de duree. Toutes les heures sont en heure belge (Europe/Brussels). BELFLA 2026</footer>
           </div>
           ${scriptClient}
           </body></html>`;
