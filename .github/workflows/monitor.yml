@@ -153,6 +153,7 @@ jobs:
                 </div>
                 <div class="svg-hote" id="svg-${idx}"></div>
                 <div class="barres" id="barres-${idx}"></div>
+                <p class="legende-barres">une barre = une verification &middot; vert = reussie, rouge = echec</p>
               </div>
             </article>`;
           };
@@ -354,7 +355,7 @@ jobs:
             .marque { width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
               font-size:.72rem; font-weight:700; background:rgba(55,217,154,.16); color:var(--vert); }
             .carte.ko .marque { background:rgba(255,98,89,.16); color:var(--rouge); }
-            .carte h3 { margin:0; font-size:1.05rem; font-weight:600; flex:1; }
+            .carte h3 { margin:0; font-size:1.05rem; font-weight:600; flex:1; color:var(--texte); }
             .pill { font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; font-weight:700;
               padding:4px 10px; border-radius:99px; white-space:nowrap; }
             .pill-ok { background:rgba(55,217,154,.14); color:var(--vert); }
@@ -391,8 +392,9 @@ jobs:
               font-family:"JetBrains Mono", ui-monospace, monospace; }
             .barres { display:flex; gap:2px; margin-top:10px; height:16px; align-items:stretch; }
             .barres .b { flex:1; border-radius:2px; min-width:2px; }
-            .barres .b-ok { background:rgba(55,217,154,.55); }
-            .barres .b-ko { background:var(--rouge); }
+            .barres .b-ok { background:rgba(55,217,154,.3); }
+            .barres .b-ko { background:rgba(255,98,89,.75); }
+            .legende-barres { margin:6px 0 0; font-size:.68rem; color:var(--tres-doux); }
             .vide-graph { margin:14px 0; font-size:.8rem; color:var(--tres-doux); text-align:center; }
             .incident { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
               padding:16px 18px; margin-bottom:12px; }
@@ -465,7 +467,7 @@ jobs:
             <div id="banniere-retard" class="banniere">Cette page date de <span id="retard-min"></span> minutes. Le monitoring semble retarde : depliez Infrastructure du monitoring en bas de page.</div>
             <section class="bloc-surveille">
               <div class="bloc-tete">
-                <h2>Pages surveillees</h2><span class="st">site Ladbrokes.be</span>
+                <span class="st"></span>
                 <div class="switch">
                   <button class="btn-periode actif" data-j="1">24 h</button>
                   <button class="btn-periode" data-j="7">7 jours</button>
