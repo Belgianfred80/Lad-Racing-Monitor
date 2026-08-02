@@ -161,7 +161,6 @@ jobs:
           const actionsUrl = process.env.REPO_ACTIONS_URL || "https://github.com";
           const archiveUrl = process.env.REPO_ARCHIVE_URL || "https://github.com";
           const noms = d.results.map(function(r){ return r.name; });
-          const G = String.fromCharCode(34);
           const scriptClient = [
             "<script>",
             "var HIST = " + JSON.stringify(hist) + ";",
@@ -178,12 +177,32 @@ jobs:
             "  if (!iso) return null;",
             "  return new Date(iso).toLocaleString(\"fr-BE\", { timeZone: \"Europe/Brussels\", day: \"2-digit\", month: \"2-digit\", year: \"numeric\", hour: \"2-digit\", minute: \"2-digit\" });",
             "}",
+            "function fcourt(iso) {",
+            "  return new Date(iso).toLocaleString(\"fr-BE\", { timeZone: \"Europe/Brussels\", day: \"2-digit\", month: \"2-digit\", hour: \"2-digit\", minute: \"2-digit\" });",
+            "}",
             "function heureCourte(iso, jours) {",
             "  var o = jours ? { timeZone: \"Europe/Brussels\", day: \"2-digit\", month: \"2-digit\" } : { timeZone: \"Europe/Brussels\", hour: \"2-digit\", minute: \"2-digit\" };",
             "  return new Date(iso).toLocaleString(\"fr-BE\", o);",
             "}",
+            "var infobulle = document.createElement(\"div\");",
+            "infobulle.className = \"infobulle\";",
+            "document.body.appendChild(infobulle);",
+            "function montrerBulle(html, x, y) {",
+            "  infobulle.innerHTML = html;",
+            "  infobulle.style.display = \"block\";",
+            "  var l = x + 14, t = y - 12;",
+            "  var lg = infobulle.offsetWidth, ht = infobulle.offsetHeight;",
+            "  if (l + lg > window.innerWidth - 8) { l = x - lg - 14; }",
+            "  if (t + ht > window.innerHeight - 8) { t = window.innerHeight - ht - 8; }",
+            "  if (t < 8) { t = 8; }",
+            "  infobulle.style.left = l + \"px\";",
+            "  infobulle.style.top = t + \"px\";",
+            "}",
+            "function cacherBulle() { infobulle.style.display = \"none\"; }",
             "var periode = 1;",
+            "var series = {};",
             "function dessiner() {",
+            "  cacherBulle();",
             "  var limite = Date.now() - periode * 24 * 3600 * 1000;",
             "  var pts = HIST.filter(function(m){ return new Date(m.t).getTime() >= limite; });",
             "  NOMS.forEach(function(nom, idx) {",
@@ -192,6 +211,7 @@ jobs:
             "      var p = (m.p || []).filter(function(x){ return x.n === nom; })[0];",
             "      if (p) { serie.push({ t: m.t, ok: p.ok, ms: p.ms }); }",
             "    });",
+            "    series[idx] = serie;",
             "    var hote = document.getElementById(\"svg-\" + idx);",
             "    var barres = document.getElementById(\"barres-\" + idx);",
             "    var dispo = document.getElementById(\"dispo-\" + idx);",
@@ -230,7 +250,7 @@ jobs:
             "      aire = \"<path d=\" + G + \"M \" + X(avecMs[0].t).toFixed(1) + \" \" + bas + chemin.replace(/^ M /, \" L \") + \" L \" + X(avecMs[avecMs.length-1].t).toFixed(1) + \" \" + bas + \" Z\" + G + \" class=aire />\";",
             "    }",
             "    var pointsKo = serie.filter(function(s){ return s.ok === 0 && s.ms; }).map(function(s){",
-            "      return \"<circle cx=\" + X(s.t).toFixed(1) + \" cy=\" + Y(s.ms).toFixed(1) + \" r=3 class=pt-ko><title>\" + fh(s.t) + \"</title></circle>\";",
+            "      return \"<circle cx=\" + X(s.t).toFixed(1) + \" cy=\" + Y(s.ms).toFixed(1) + \" r=3 class=pt-ko />\";",
             "    }).join(\"\");",
             "    var grilles = \"\", etiquettes = \"\";",
             "    [0, 0.5, 1].forEach(function(f){",
@@ -242,18 +262,64 @@ jobs:
             "    var ligneSeuil = \"<line x1=\" + mgg + \" y1=\" + ySeuil.toFixed(1) + \" x2=\" + (W - mgd) + \" y2=\" + ySeuil.toFixed(1) + \" class=seuil-l />\";",
             "    var tempsD = \"<text x=\" + mgg + \" y=\" + (H - 4) + \" class=axe>\" + heureCourte(serie[0].t, periode > 1) + \"</text>\";",
             "    var tempsF = \"<text x=\" + (W - mgd) + \" y=\" + (H - 4) + \" class=axe text-anchor=end>\" + heureCourte(serie[serie.length-1].t, periode > 1) + \"</text>\";",
-            "    hote.innerHTML = \"<svg viewBox=\" + G + \"0 0 \" + W + \" \" + H + G + \" preserveAspectRatio=\" + G + \"none\" + G + \" class=courbe>\" + + grilles + ligneSeuil + aire + \"<path d=\" + G + chemin + G + \" class=ligne />\" + pointsKo + etiquettes + tempsD + tempsF + \"</svg>\";",
+            "    var curseur = \"<g class=curseur style=\" + G + \"display:none\" + G + \"><line y1=\" + mgh + \" y2=\" + (mgh + ih) + \" class=curseur-l /><circle r=4 class=curseur-p /></g>\";",
+            "    var zone = \"<rect x=\" + mgg + \" y=\" + mgh + \" width=\" + iw + \" height=\" + ih + \" class=zone-survol />\";",
+            "    hote.innerHTML = \"<svg viewBox=\" + G + \"0 0 \" + W + \" \" + H + G + \" preserveAspectRatio=\" + G + \"none\" + G + \" class=courbe>\" + grilles + ligneSeuil + aire + \"<path d=\" + G + chemin + G + \" class=ligne />\" + pointsKo + etiquettes + tempsD + tempsF + curseur + zone + \"</svg>\";",
+            "    var svg = hote.querySelector(\"svg\");",
+            "    var grp = svg.querySelector(\".curseur\");",
+            "    var lgn = svg.querySelector(\".curseur-l\");",
+            "    var cer = svg.querySelector(\".curseur-p\");",
+            "    function surSurvol(ev) {",
+            "      var r = svg.getBoundingClientRect();",
+            "      var cx = (ev.touches ? ev.touches[0].clientX : ev.clientX);",
+            "      var cy = (ev.touches ? ev.touches[0].clientY : ev.clientY);",
+            "      var xv = ((cx - r.left) / r.width) * W;",
+            "      var meilleur = null, dmin = Infinity;",
+            "      serie.forEach(function(s){",
+            "        if (!s.ms) return;",
+            "        var dd = Math.abs(X(s.t) - xv);",
+            "        if (dd < dmin) { dmin = dd; meilleur = s; }",
+            "      });",
+            "      if (!meilleur) return;",
+            "      var px = X(meilleur.t), py = Y(meilleur.ms);",
+            "      lgn.setAttribute(\"x1\", px); lgn.setAttribute(\"x2\", px);",
+            "      cer.setAttribute(\"cx\", px); cer.setAttribute(\"cy\", py);",
+            "      cer.setAttribute(\"class\", meilleur.ok ? \"curseur-p\" : \"curseur-p ko\");",
+            "      grp.style.display = \"\";",
+            "      var etat = meilleur.ok ? \"\" : \"<span class=bulle-ko>echec</span>\";",
+            "      montrerBulle(\"<strong>\" + (meilleur.ms/1000).toFixed(1) + \" s</strong>\" + etat + \"<span class=bulle-t>\" + fcourt(meilleur.t) + \"</span>\", cx, cy);",
+            "    }",
+            "    function finSurvol() { grp.style.display = \"none\"; cacherBulle(); }",
+            "    svg.addEventListener(\"mousemove\", surSurvol);",
+            "    svg.addEventListener(\"mouseleave\", finSurvol);",
+            "    svg.addEventListener(\"touchstart\", surSurvol);",
+            "    svg.addEventListener(\"touchmove\", surSurvol);",
+            "    svg.addEventListener(\"touchend\", finSurvol);",
             "    var maxB = 120;",
             "    var pas = Math.max(1, Math.ceil(serie.length / maxB));",
             "    var groupes = [];",
             "    for (var i = 0; i < serie.length; i += pas) {",
             "      var tranche = serie.slice(i, i + pas);",
             "      var ko = tranche.filter(function(s){ return s.ok === 0; }).length;",
-            "      groupes.push({ ko: ko, t: tranche[0].t, n: tranche.length });",
+            "      var msv = tranche.filter(function(s){ return s.ms; }).map(function(s){ return s.ms; });",
+            "      var moy = msv.length ? (msv.reduce(function(a,b){ return a+b; }, 0) / msv.length) : null;",
+            "      groupes.push({ ko: ko, t: tranche[0].t, n: tranche.length, moy: moy });",
             "    }",
             "    barres.innerHTML = groupes.map(function(g){",
-            "      return \"<span class=\" + G + \"b \" + (g.ko ? \"b-ko\" : \"b-ok\") + G + \" title=\" + G + fh(g.t) + (g.ko ? \" — \" + g.ko + \" echec(s)\" : \" — ok\") + G + \"></span>\";",
+            "      return \"<span class=\" + G + \"b \" + (g.ko ? \"b-ko\" : \"b-ok\") + G + \"></span>\";",
             "    }).join(\"\");",
+            "    var lesB = barres.querySelectorAll(\".b\");",
+            "    for (var j = 0; j < lesB.length; j++) {",
+            "      (function(el, g){",
+            "        el.addEventListener(\"mousemove\", function(ev){",
+            "          var t = g.n > 1 ? (g.n + \" verifications\") : \"1 verification\";",
+            "          var etat = g.ko ? \"<span class=bulle-ko>\" + g.ko + \" echec(s)</span>\" : \"<span class=bulle-ok>tout ok</span>\";",
+            "          var moyv = g.moy ? \"<strong>\" + (g.moy/1000).toFixed(1) + \" s</strong>\" : \"\";",
+            "          montrerBulle(moyv + etat + \"<span class=bulle-t>\" + fcourt(g.t) + \" &middot; \" + t + \"</span>\", ev.clientX, ev.clientY);",
+            "        });",
+            "        el.addEventListener(\"mouseleave\", cacherBulle);",
+            "      })(lesB[j], groupes[j]);",
+            "    }",
             "  });",
             "}",
             "document.querySelectorAll(\".btn-periode\").forEach(function(b){",
@@ -325,7 +391,7 @@ jobs:
             :root {
               --fond:#0e1319; --panneau:#161d26; --panneau2:#121821; --bord:#232d39;
               --texte:#e8edf3; --doux:#8b98a8; --tres-doux:#5d6b7c;
-              --vert:#37d99a; --rouge:#ff6259; --ambre:#f2b544;
+              --vert:#37d99a; --rouge:#ff6259; --ambre:#f2b544; --bleu:#6f8ac4;
             }
             * { box-sizing:border-box; }
             body { margin:0; background:var(--fond); color:var(--texte);
@@ -344,7 +410,6 @@ jobs:
             .bloc-surveille { background:var(--panneau2); border:1px solid var(--bord);
               border-radius:20px; padding:22px; }
             .bloc-tete { display:flex; align-items:center; gap:10px; margin:0 2px 16px; flex-wrap:wrap; }
-            .bloc-tete h2 { margin:0; font-size:1rem; font-weight:600; letter-spacing:-.01em; }
             .bloc-tete .st { font-size:.74rem; color:var(--doux); flex:1; }
             .switch { display:flex; gap:4px; background:#0f151c; border:1px solid var(--bord);
               border-radius:99px; padding:3px; }
@@ -366,7 +431,7 @@ jobs:
               padding:4px 10px; border-radius:99px; white-space:nowrap; }
             .pill-ok { background:rgba(55,217,154,.14); color:var(--vert); }
             .pill-ko { background:rgba(255,98,89,.14); color:var(--rouge); }
-            .url { display:block; margin:10px 0 18px; font-size:.78rem; color:#6f8ac4;
+            .url { display:block; margin:10px 0 18px; font-size:.78rem; color:var(--bleu);
               font-family:"JetBrains Mono", ui-monospace, monospace; text-decoration:none; word-break:break-all; }
             .url:hover { color:#9ab2e8; text-decoration:underline; }
             .mesure { display:flex; align-items:baseline; gap:6px; }
@@ -391,17 +456,36 @@ jobs:
             .courbe { width:100%; height:150px; display:block; overflow:visible; }
             .courbe .grille { stroke:#1c242e; stroke-width:1; }
             .courbe .seuil-l { stroke:#4a3a20; stroke-width:1; stroke-dasharray:4 4; }
-            .courbe .ligne { fill:none; stroke:#6f8ac4; stroke-width:1.6;
-            stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+            .courbe .ligne { fill:none; stroke:var(--bleu); stroke-width:1.6;
+              stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
             .courbe .aire { fill:rgba(111,138,196,.3); stroke:none; }
             .courbe .pt-ko { fill:var(--rouge); }
             .courbe .axe { fill:var(--tres-doux); font-size:9px;
               font-family:"JetBrains Mono", ui-monospace, monospace; }
+            .courbe .zone-survol { fill:transparent; cursor:crosshair; }
+            .courbe .curseur-l { stroke:rgba(232,237,243,.25); stroke-width:1; stroke-dasharray:3 3;
+              vector-effect:non-scaling-stroke; }
+            .courbe .curseur-p { fill:var(--bleu); stroke:var(--fond); stroke-width:2; }
+            .courbe .curseur-p.ko { fill:var(--rouge); }
             .barres { display:flex; gap:2px; margin-top:10px; height:16px; align-items:stretch; }
-            .barres .b { flex:1; border-radius:2px; min-width:2px; }
+            .barres .b { flex:1; border-radius:2px; min-width:2px; cursor:crosshair;
+              transition:filter .12s, transform .12s; }
+            .barres .b:hover { filter:brightness(1.7); transform:scaleY(1.25); }
             .barres .b-ok { background:rgba(111,138,196,.3); }
             .barres .b-ko { background:rgba(255,98,89,.75); }
             .legende-barres { margin:6px 0 0; font-size:.68rem; color:var(--tres-doux); }
+            .infobulle { position:fixed; display:none; z-index:50; pointer-events:none;
+              background:#0b1016; border:1px solid var(--bord); border-radius:10px;
+              padding:8px 12px; font-size:.8rem; color:var(--texte);
+              box-shadow:0 6px 20px rgba(0,0,0,.5); white-space:nowrap; }
+            .infobulle strong { font-family:"JetBrains Mono", ui-monospace, monospace;
+              font-size:.95rem; display:inline-block; }
+            .infobulle .bulle-t { display:block; margin-top:3px; font-size:.72rem; color:var(--tres-doux);
+              font-family:"JetBrains Mono", ui-monospace, monospace; }
+            .infobulle .bulle-ko { display:inline-block; margin-left:8px; font-size:.7rem; font-weight:700;
+              text-transform:uppercase; letter-spacing:.06em; color:var(--rouge); }
+            .infobulle .bulle-ok { display:inline-block; font-size:.7rem; font-weight:700;
+              text-transform:uppercase; letter-spacing:.06em; color:var(--vert); }
             .vide-graph { margin:14px 0; font-size:.8rem; color:var(--tres-doux); text-align:center; }
             .incident { background:var(--panneau); border:1px solid var(--bord); border-radius:14px;
               padding:16px 18px; margin-bottom:12px; }
@@ -453,10 +537,10 @@ jobs:
             .timeline .quand { margin:0 0 3px; font-size:.78rem; font-weight:600;
               font-family:"JetBrains Mono", ui-monospace, monospace; color:#b9c6d4; }
             .timeline .quoi { margin:0; font-size:.78rem; color:var(--tres-doux); }
-            .timeline a, .infra-liste a { color:#6f8ac4; }
-            .bouton { display:inline-block; font-size:.78rem; color:#6f8ac4; text-decoration:none;
+            .timeline a, .infra-liste a { color:var(--bleu); }
+            .bouton { display:inline-block; font-size:.78rem; color:var(--bleu); text-decoration:none;
               border:1px solid var(--bord); border-radius:99px; padding:7px 16px; margin-right:8px; }
-            .bouton:hover { border-color:#6f8ac4; color:#9ab2e8; }
+            .bouton:hover { border-color:var(--bleu); color:#9ab2e8; }
             .vide { font-size:.82rem; color:var(--doux); margin:0; }
             footer { margin-top:28px; font-size:.72rem; color:var(--tres-doux); line-height:1.7; }
             @media (max-width:520px) {
@@ -513,7 +597,7 @@ jobs:
                 </div>
               </div>
             </details>
-            <footer>Page regeneree a chaque verification. Graphiques bases sur les 7 derniers jours ; toutes les mesures sont archivees par mois sans limite de duree. Toutes les heures sont en heure belge (Europe/Brussels). BELFLA 2026</footer>
+            <footer>Page regeneree a chaque verification. Graphiques bases sur les 7 derniers jours ; toutes les mesures sont archivees par mois sans limite de duree. Toutes les heures sont en heure belge (Europe/Brussels).</footer>
           </div>
           ${scriptClient}
           </body></html>`;
