@@ -66,7 +66,43 @@ jobs:
           fs.writeFileSync("history.json", JSON.stringify(hist));
           console.log("Historique : " + hist.length + " mesures sur 7 jours ; archive " + mois);
           '
-
+            - name: Generer les exports CSV
+        if: always()
+        run: |
+          node -e '
+          const fs = require("fs");
+          const SEP = ";";
+          const ENTETE = "Date (heure belge)" + SEP + "Horodatage UTC" + SEP + "Page" + SEP + "Etat" + SEP + "Duree (s)" + SEP + "Duree (ms)";
+          function lignes(mesures) {
+            const out = [];
+            mesures.forEach(function(m){
+              (m.p || []).forEach(function(p){
+                const loc = new Date(m.t).toLocaleString("fr-BE", { timeZone: "Europe/Brussels" });
+                const sec = p.ms ? (p.ms / 1000).toFixed(1).replace(".", ",") : "";
+                out.push([loc, m.t, p.n, p.ok ? "OK" : "ECHEC", sec, p.ms || ""].join(SEP));
+              });
+            });
+            return out;
+          }
+          let hist = [];
+          try { hist = JSON.parse(fs.readFileSync("history.json")); } catch(e) {}
+          if (Array.isArray(hist) && hist.length) {
+            fs.writeFileSync("export-7-jours.csv", "\uFEFF" + ENTETE + "\n" + lignes(hist).join("\n") + "\n");
+          }
+          let tout = [];
+          try {
+            fs.readdirSync("archive").filter(function(f){ return f.endsWith(".jsonl"); }).sort().forEach(function(f){
+              fs.readFileSync("archive/" + f, "utf8").split("\n").forEach(function(l){
+                if (!l.trim()) return;
+                try { tout.push(JSON.parse(l)); } catch(e) {}
+              });
+            });
+          } catch(e) {}
+          if (tout.length) {
+            fs.writeFileSync("export-complet.csv", "\uFEFF" + ENTETE + "\n" + lignes(tout).join("\n") + "\n");
+            console.log("Export complet : " + tout.length + " mesures");
+          }
+          '
       - name: Generer le rapport et la page de statut
         if: always()
         env:
@@ -610,7 +646,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase || true
-          git add STATUS.md index.html history.json archive 2>/dev/null || git add STATUS.md
+          git add STATUS.md index.html history.json archive export-7-jours.csv export-complet.csv 2>/dev/null || git add STATUS.md 2>/dev/null || git add STATUS.md
           git diff --cached --quiet || git commit -m "Mise a jour du statut"
           git push || true
 
