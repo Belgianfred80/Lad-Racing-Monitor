@@ -1,8 +1,8 @@
 # Etat du monitoring Ladbrokes
 
-Derniere verification : **15/11/2026 16:25:10** (heure belge)
+Derniere verification : **15/11/2026 16:37:11** (heure belge)
 
 | Page | Etat | Detail |
 |---|---|---|
-| [Courses hippiques (PMU)](https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing) | OK | Temps de chargement: 3.6s |
-| [Courses de lévriers](https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing) | OK | Temps de chargement: 3.4s |
+| [Courses hippiques (PMU)](https://www.ladbrokes.be/fr/horseraces/#!/1_pmu-french-horse-racing) | OK | Temps de chargement: 4.7s |
+| [Courses de lévriers](https://www.ladbrokes.be/fr/greyhound/#!/19_greyhound-racing) | OK | Temps de chargement: 4.3s |
