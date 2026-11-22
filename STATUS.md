@@ -1,6 +1,6 @@
 # Etat du monitoring Ladbrokes
 
-Derniere verification : **22/11/2026 15:49:13** (heure belge)
+Derniere verification : **22/11/2026 16:01:51** (heure belge)
 
 | Page | Etat | Detail |
 |---|---|---|
